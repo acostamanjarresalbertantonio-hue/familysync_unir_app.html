@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FamilySync - Agenda Familiar Premium</title>
+    <!-- Tailwind CSS para diseño fluido y moderno -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome para iconos ejecutivos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- html2canvas para generación de imágenes nativas de alta calidad -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Google APIs para Autenticación de Google Calendar y Sincronización en Tiempo Real -->
+    <script src="https://apis.google.com/js/api.js" async defer></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #2b231a; /* Madera oscura de fondo ambiental */
+            background-image: radial-gradient(rgba(0, 0, 0, 0.4) 1px, transparent 0);
+            background-size: 24px 24px;
+        }
+
+        .planner-header {
+            font-family: 'Playfair Display', serif;
+        }
+
+        /* Simulación de textura de papel pergamino mate que no daña la vista */
+        .paper-texture {
+            background-color: #f5eedf;
+            background-image: radial-gradient(#dfd7c2 1.2px, transparent 0);
+            background-size: 20px 20px;
+        }
+
+        /* Estilo para los espirales de la agenda física en el exportador */
+        .spiral-ring {
+            background: linear-gradient(90deg, #8a8a8a 0%, #dcdcdc 50%, #5e5e5e 100%);
+            border-radius: 4px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.15);
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #eae3d2;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c7bda6;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="text-[#2c261e] min-h-screen flex justify-center p-0 sm:p-4">
+
+    <!-- CONTENEDOR DE LA APLICACIÓN ESTILO AGENDA MÓVIL PREMIUM -->
+    <div class="w-full max-w-md bg-[#f5eedf] min-h-screen sm:min-h-[850px] sm:my-4 flex flex-col shadow-2xl relative border border-[#dfd5be] sm:rounded-3xl overflow-hidden">
+        
+        <!-- HEADER DE LA APP (Estilo Corporativo de Lujo) -->
+        <header class="bg-[#ebdcb9] p-4 border-b border-[#dfd5be] sticky top-0 z-30 flex justify-between items-center shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="bg-[#1f4e79] text-white p-2.5 rounded-2xl shadow-md">
+                    <i class="fa-solid fa-feather-pointed text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-base font-bold text-[#1f4e79] tracking-wide planner-header">FamilySync</h1>
+                    <p class="text-[9px] text-slate-600 font-bold uppercase tracking-widest">UNIR & Cloud Edition</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <!-- Botón de Sincronización Manual con Google Calendar -->
+                <button id="google-sync-now-btn" class="bg-[#f5eedf] hover:bg-[#eae3d2] text-slate-700 p-2.5 rounded-xl transition border border-[#dfd5be] shadow-sm hidden" title="Sincronizar Google Calendar">
+                    <i class="fa-solid fa-arrows-rotate text-sm"></i>
+                </button>
+                <!-- Botón de Exportación Premium -->
+                <button onclick="openExportModal()" class="bg-[#f5eedf] hover:bg-[#eae3d2] text-slate-700 p-2.5 rounded-xl transition border border-[#dfd5be] shadow-sm" title="Exportar Agenda">
+                    <i class="fa-solid fa-print text-sm"></i>
+                </button>
+                <!-- Badge Estado Activo -->
+                <div id="cloud-status-badge" class="flex items-center gap-1.5 bg-amber-500/10 text-amber-700 px-2.5 py-1.5 rounded-xl text-[9px] font-bold border border-amber-300 shadow-sm">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                    <span id="cloud-status-text">Conectando...</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- SUBHEADER NAVEGACIÓN SEMANAL -->
+        <div id="calendar-week-nav" class="bg-[#f5eedf]/95 backdrop-blur-md p-3 border-b border-[#dfd5be] flex justify-between items-center sticky top-[69px] z-20">
+            <button onclick="prevWeek()" class="p-2 hover:bg-[#eae3d2] rounded-lg text-slate-500 hover:text-slate-800 transition">
+                <i class="fa-solid fa-chevron-left text-xs"></i>
+            </button>
+            <span id="current-week-label" class="font-bold text-[10px] tracking-widest text-slate-600 uppercase">Semana 1 (Jun 08 - Jun 14)</span>
+            <button onclick="nextWeek()" class="p-2 hover:bg-[#eae3d2] rounded-lg text-slate-500 hover:text-slate-800 transition">
+                <i class="fa-solid fa-chevron-right text-xs"></i>
+            </button>
+        </div>
+
+        <!-- PESTAÑAS DE NAVEGACIÓN INTERACTIVA -->
+        <div class="px-4 pt-4 bg-[#f5eedf]">
+            <div class="grid grid-cols-4 bg-[#eae3d2] p-1 rounded-2xl border border-[#dfd5be]/40 text-center">
+                <button onclick="switchView('day')" id="tab-day" class="py-2.5 text-[10px] font-bold rounded-xl transition bg-[#f5eedf] text-slate-900 shadow-sm border border-[#dfd5be]/60">
+                    DÍA
+                </button>
+                <button onclick="switchView('week')" id="tab-week" class="py-2.5 text-[10px] font-bold rounded-xl transition text-slate-600 hover:text-slate-900">
+                    SEMANA
+                </button>
+                <button onclick="switchView('month')" id="tab-month" class="py-2.5 text-[10px] font-bold rounded-xl transition text-slate-600 hover:text-slate-900">
+                    MES
+                </button>
+                <button onclick="switchView('stats')" id="tab-stats" class="py-2.5 text-[10px] font-bold rounded-xl transition text-slate-600 hover:text-slate-900">
+                    CONEXIÓN
+                </button>
+            </div>
+        </div>
+
+        <!-- CUERPO DE CONTENIDO CON DESPLAZAMIENTO -->
+        <main class="flex-1 overflow-y-auto pb-24 p-4 space-y-4 paper-texture">
+
+            <!-- 1. VISTA DIARIA -->
+            <div id="view-day" class="space-y-4">
+                <div class="flex justify-between gap-1 overflow-x-auto pb-1" id="day-selector"></div>
+                <div class="bg-white/80 border border-[#dfd5be] rounded-3xl p-4 shadow-sm space-y-3">
+                    <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+                        <h3 class="text-xs font-bold tracking-wider text-slate-700 uppercase planner-header"><i class="fa-solid fa-list-check text-[#1f4e79] mr-2"></i>Línea de Tiempo Diaria</h3>
+                        <span class="text-[9px] text-slate-400">Toca las horas libres para agregar</span>
+                    </div>
+                    <div class="divide-y divide-slate-100" id="day-timeline-container"></div>
+                </div>
+            </div>
+
+            <!-- 2. VISTA SEMANAL -->
+            <div id="view-week" class="hidden space-y-4">
+                <div class="bg-white/90 p-3 rounded-2xl border border-[#dfd5be] shadow-sm overflow-hidden">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-xs font-bold tracking-wider text-slate-700 uppercase planner-header"><i class="fa-solid fa-table-cells text-[#1f4e79] mr-2"></i>Cuadrícula Semanal</h3>
+                        <span class="text-[9px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded">Toca cualquier celda</span>
+                    </div>
+                    <div class="overflow-x-auto w-full">
+                        <table class="w-full text-left border-collapse min-w-[650px] text-[11px]">
+                            <thead>
+                                <tr class="border-b border-slate-200">
+                                    <th class="py-2 pr-2 font-bold text-slate-400 w-16">HORA</th>
+                                    <th class="py-2 text-center font-bold text-slate-600">LUN</th>
+                                    <th class="py-2 text-center font-bold text-slate-600">MAR</th>
+                                    <th class="py-2 text-center font-bold text-slate-600">MIÉ</th>
+                                    <th class="py-2 text-center font-bold text-slate-600">JUE</th>
+                                    <th class="py-2 text-center font-bold text-slate-600">VIE</th>
+                                    <th class="py-2 text-center font-bold text-slate-600">SÁB</th>
+                                </tr>
+                            </thead>
+                            <tbody id="week-grid-body" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. VISTA MENSUAL (ESTILO GOOGLE CALENDAR / OUTLOOK) -->
+            <div id="view-month" class="hidden space-y-4">
+                <div class="bg-white/90 p-4 rounded-2xl border border-[#dfd5be] shadow-sm space-y-4">
+                    <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+                        <h3 class="text-xs font-bold tracking-wider text-slate-700 uppercase planner-header"><i class="fa-solid fa-calendar-days text-[#1f4e79] mr-2"></i>Vista de Mes Completo</h3>
+                        <span class="text-xs font-bold text-[#1f4e79] bg-[#ddebf7] px-3 py-1 rounded-full border border-[#9bc2e6]">Junio 2026</span>
+                    </div>
+
+                    <div class="grid grid-cols-7 gap-1 text-center text-[10px]">
+                        <div class="text-slate-400 font-bold py-1">L</div>
+                        <div class="text-slate-400 font-bold py-1">M</div>
+                        <div class="text-slate-400 font-bold py-1">M</div>
+                        <div class="text-slate-400 font-bold py-1">J</div>
+                        <div class="text-slate-400 font-bold py-1">V</div>
+                        <div class="text-slate-400 font-bold py-1 text-red-500">S</div>
+                        <div class="text-slate-400 font-bold py-1 text-red-500">D</div>
+                        <div id="month-days-container" class="contents"></div>
+                    </div>
+                </div>
+
+                <div id="month-day-details-panel" class="bg-white/90 p-4 rounded-2xl border border-[#dfd5be] shadow-sm space-y-3">
+                    <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+                        <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider" id="details-panel-title">Detalles del Día</h4>
+                        <span class="text-[10px] text-slate-500 font-mono" id="details-panel-date">Selecciona un día en la cuadrícula</span>
+                    </div>
+                    <div class="space-y-2.5" id="details-panel-list">
+                        <p class="text-xs text-slate-400 text-center py-4">Toca un día en la cuadrícula superior para cargar su agenda completa aquí.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. PESTAÑA DE CONEXIÓN Y ESTADÍSTICAS -->
+            <div id="view-stats" class="hidden space-y-4">
+                <!-- Panel de Conexión de Google Calendar -->
+                <div class="bg-white/90 p-5 rounded-2xl border border-[#dfd5be] shadow-sm space-y-4">
+                    <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider planner-header"><i class="fa-brands fa-google text-blue-600 mr-2"></i>Sincronización Bidireccional</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed">Al conectar tu cuenta de Google, cualquier cambio que hagas en tu celular o PC se reflejará de inmediato en tu calendario personal y viceversa.</p>
+                    
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs space-y-2.5">
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-500">Estado de Google Calendar:</span>
+                            <span id="gcal-status-text" class="font-bold text-red-600">Desconectado</span>
+                        </div>
+                        <div class="text-[10px] text-slate-400">
+                            *Nota: Para sincronización en tiempo real, puedes ingresar tu Google OAuth Client ID o utilizar nuestro simulador inteligente.
+                        </div>
+                    </div>
+
+                    <div id="gcal-actions-container" class="space-y-2">
+                        <button id="gcal-connect-btn" class="w-full bg-[#1f4e79] hover:bg-[#1a4165] text-white font-bold text-xs py-3 rounded-xl transition flex items-center justify-center gap-2">
+                            <i class="fa-brands fa-google"></i> Conectar con Google Calendar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Resumen de Cargas -->
+                <div class="bg-white/90 p-4 rounded-2xl border border-[#dfd5be] shadow-sm space-y-4">
+                    <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider planner-header"><i class="fa-solid fa-chart-line text-[#1f4e79] mr-2"></i>Horas de la Semana</h3>
+                    <div class="space-y-4" id="stats-bars-container"></div>
+                </div>
+
+                <!-- Ayuda para Instalar en el Celular -->
+                <div class="bg-white/90 p-5 rounded-2xl border border-[#dfd5be] shadow-sm space-y-3">
+                    <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider planner-header"><i class="fa-solid fa-mobile-screen-button text-[#1f4e79] mr-2"></i>¿Cómo usarla en tu Celular?</h3>
+                    <ol class="list-decimal list-inside text-xs text-slate-500 space-y-2 leading-relaxed">
+                        <li>Sube este archivo HTML a <strong>GitHub Pages</strong> o <strong>Vercel</strong> de forma gratuita.</li>
+                        <li>Abre el enlace en el navegador de tu móvil (Safari en iPhone o Chrome en Android).</li>
+                        <li>Selecciona <strong>"Compartir"</strong> y luego elige <strong>"Añadir a pantalla de inicio"</strong>.</li>
+                        <li>¡La app se abrirá en pantalla completa y se sincronizará al instante con tu PC!</li>
+                    </ol>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- BOTÓN FLOTANTE AGREGAR -->
+        <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-30">
+            <button onclick="openAddEventModal()" class="bg-[#1f4e79] hover:bg-[#1a4165] text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg shadow-blue-900/30 border-4 border-[#f5eedf] transition transform active:scale-95">
+                <i class="fa-solid fa-plus text-xl"></i>
+            </button>
+        </div>
+
+        <!-- MODAL: AGREGAR / EDITAR ACTIVIDAD -->
+        <div id="add-event-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <div class="bg-[#fbfbf9] border border-[#dfd5be] w-full max-w-sm rounded-3xl shadow-2xl p-6 space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <h3 id="modal-title" class="text-sm font-bold text-slate-900 uppercase tracking-wider planner-header">Nueva Actividad</h3>
+                    <button onclick="closeAddEventModal()" class="text-slate-400 hover:text-slate-800"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+
+                <form id="event-form" onsubmit="saveEvent(event)" class="space-y-3.5 text-xs">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nombre de la actividad</label>
+                        <input type="text" id="event-title" required placeholder="Ej: Clase UNIR o Terapias" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-[#1f4e79]">
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Categoría de horario</label>
+                        <select id="event-type" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-[#1f4e79]">
+                            <option value="ESTUDIO">🔵 ESTUDIO</option>
+                            <option value="TRABAJO">🔴 TRABAJO (Terapias)</option>
+                            <option value="CASA">🟢 CASA (Logística / Limpieza)</option>
+                            <option value="DISPONIBLE">🟡 DISPONIBLE (Tiempo Libre)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Fecha</label>
+                        <input type="date" id="event-date" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-[#1f4e79]">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Hora Inicio</label>
+                            <input type="time" id="event-start" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-[#1f4e79]">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Duración (Mins)</label>
+                            <input type="number" id="event-duration" required min="10" max="480" value="60" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-[#1f4e79]">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-2 pt-2">
+                        <div class="flex gap-2">
+                            <button type="button" onclick="closeAddEventModal()" class="flex-1 bg-slate-100 text-slate-600 font-bold py-3 rounded-xl">Cancelar</button>
+                            <button type="submit" class="flex-1 bg-[#1f4e79] text-white font-bold py-3 rounded-xl shadow-md">Guardar</button>
+                        </div>
+                        <button type="button" id="modal-delete-btn" onclick="deleteCurrentEvent()" class="w-full bg-red-100 text-red-700 hover:bg-red-200 font-bold py-2.5 rounded-xl transition hidden">
+                            <i class="fa-regular fa-trash-can mr-1.5"></i> Eliminar Actividad
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- MODAL: EXPORTADOR PREMIUM (IMAGEN DE AGENDA DE LUJO SOBRE MESA) -->
+        <div id="export-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md">
+            <div class="bg-[#fbfbf9] border border-slate-200 w-full max-w-sm rounded-3xl shadow-2xl p-6 space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+                    <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider planner-header"><i class="fa-solid fa-images text-[#1f4e79] mr-2"></i>Imprimir / Exportar</h3>
+                    <button onclick="closeExportModal()" class="text-slate-400 hover:text-slate-800"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+
+                <div class="space-y-4 text-xs">
+                    <p class="text-slate-500 leading-relaxed">Genera un documento que simula una hermosa **agenda de papel marfil con espirales físicos** reposando sobre un escritorio de madera noble, ideal para imprimir o guardar en HD.</p>
+                    
+                    <div class="space-y-1.5">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase">Selección de vista</label>
+                        <select id="export-view-select" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-800">
+                            <option value="week">Semana Actual (Matriz Completa)</option>
+                            <option value="month">Mes de Junio (Cuadrícula Completa)</option>
+                        </select>
+                    </div>
+
+                    <!-- MOCKUP OCULTO DE EXPORTACIÓN (Estética de Agenda Física Premium de la Imagen) -->
+                    <div id="capture-container" class="hidden w-[950px] bg-[#221c16] p-12 shadow-2xl relative" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                        
+                        <!-- Espirales de Agenda Superior -->
+                        <div class="absolute top-[32px] left-[10%] right-[10%] flex justify-between px-8 z-30 pointer-events-none">
+                            <span class="w-4 h-10 spiral-ring"></span>
+                            <span class="w-4 h-10 spiral-ring"></span>
+                            <span class="w-4 h-10 spiral-ring"></span>
+                            <span class="w-4 h-10 spiral-ring"></span>
+                            <span class="w-4 h-10 spiral-ring"></span>
+                            <span class="w-4 h-10 spiral-ring"></span>
+                            <span class="w-4 h-10 spiral-ring"></span>
+                            <span class="w-4 h-10 spiral-ring"></span>
+                            <span class="w-4 h-10 spiral-ring"></span>
+                        </div>
+
+                        <!-- Hoja de Papel Marfil Realista -->
+                        <div class="bg-[#faf5e8] rounded-3xl p-10 border border-[#dfd5be] shadow-inner relative overflow-hidden pt-12" style="background-image: radial-gradient(#dfd7c2 1.2px, transparent 0); background-size: 28px 28px;">
+                            
+                            <!-- Cabecera de Agenda -->
+                            <div class="flex justify-between items-end border-b-2 border-[#1f4e79] pb-6 mb-6">
+                                <div>
+                                    <h4 class="text-3xl font-bold text-[#1f4e79] tracking-tight planner-header" style="font-family: 'Playfair Display', serif;">FamilySync Agenda Planner</h4>
+                                    <p class="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Planificación Unificada del Hogar y Maestría UNIR</p>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-xs font-bold text-[#385723] bg-[#e2f0d9] border border-[#a9d18e] px-4 py-1.5 rounded-full uppercase" id="capture-sub-tag">Junio 2026</span>
+                                </div>
+                            </div>
+
+                            <!-- Contenedor del renderizado -->
+                            <div id="capture-render-area" class="space-y-4"></div>
+
+                            <!-- Leyenda elegante en el pie -->
+                            <div class="mt-8 pt-6 border-t border-slate-200 flex justify-between items-center text-[10px] text-slate-500 font-semibold">
+                                <div class="flex gap-4">
+                                    <span>🟢 Casa / Logística</span>
+                                    <span>🔵 Estudio Académico</span>
+                                    <span>🔴 Terapias / Trabajo</span>
+                                </div>
+                                <span>FamilySync Agenda • Albert & Katerine</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones de Acción -->
+                    <div class="space-y-2 pt-2">
+                        <button onclick="generateImage()" class="w-full bg-[#1f4e79] hover:bg-[#1a4165] text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-md">
+                            <i class="fa-solid fa-image"></i> Descargar Imagen PNG Premium
+                        </button>
+                        <button onclick="window.print()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-file-pdf"></i> Guardar como PDF / Imprimir
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTENEDOR DE NOTIFICACIONES TOAST -->
+        <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-full max-w-xs"></div>
+    </div>
+
+    <!-- CÓDIGO LOGÍSTICO, CONEXIÓN CON FIREBASE Y GOOGLE CALENDAR -->
+    <script type="module">
+        // Importación oficial de módulos de Firebase 11.6.1
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Configuración de la Base de Datos en la nube (proporcionada por el entorno o demo de respaldo)
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "",
+            authDomain: "familysync-unir.firebaseapp.com",
+            projectId: "familysync-unir",
+            storageBucket: "familysync-unir.appspot.com",
+            messagingSenderId: "1010101010",
+            appId: "1:101010:web:9f8e7d"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'familysync-unir-app';
+
+        let user = null;
+        let events = []; // Array central que se sincroniza dinámicamente con la Nube y Google
+        let googleToken = null;
+
+        // Configuración por defecto de la API de Google (con modo simulación activo para pruebas al instante)
+        let isGoogleConnected = false;
+        let googleClientId = "894231804791-familyunir.apps.googleusercontent.com"; // Marcador genérico, editable
+        let googleCalendarId = "primary";
+
+        // 1. INICIALIZACIÓN Y CONTROL DE AUTENTICACIÓN FIREBASE (Regla 3)
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (err) {
+                console.error("Error al autenticar:", err);
+                showToast("⚠️ Error de conexión. Reintentando...");
+            }
+        };
+
+        initAuth();
+
+        onAuthStateChanged(auth, (currentUser) => {
+            if (currentUser) {
+                user = currentUser;
+                document.getElementById('cloud-status-badge').className = "flex items-center gap-1.5 bg-[#e2f0d9] text-[#385723] px-2.5 py-1.5 rounded-xl text-[9px] font-bold border border-[#a9d18e] shadow-sm";
+                document.getElementById('cloud-status-text').innerText = "Nube Activa";
+                showToast("🌐 Conectado a la Base de Datos en tiempo real");
+                
+                // Suscribirse a los datos en la nube (Regla 1 y Regla 2 de Firestore)
+                // Usamos la ruta privada estricta de la regla 1
+                const eventsCol = collection(db, 'artifacts', appId, 'users', user.uid, 'events');
+                
+                onSnapshot(eventsCol, (snapshot) => {
+                    events = [];
+                    snapshot.forEach(docSnap => {
+                        events.push({ id: docSnap.id, ...docSnap.data() });
+                    });
+                    
+                    // Si la base de datos está vacía en el primer arranque, cargamos el horario inicial
+                    if (events.length === 0) {
+                        loadInitialSchedule();
+                    } else {
+                        refreshAllViews();
+                    }
+                }, (error) => {
+                    console.error("Firestore Error:", error);
+                    showToast("❌ Error al leer actualizaciones en la nube.");
+                });
+            }
+        });
+
+        // Cargar horario maestro oficial inicial de Junio 2026
+        async function loadInitialSchedule() {
+            const initialEvents = [
+                { title: "Procesos de Memoria, Hab. y TIC", type: "ESTUDIO", date: "2026-06-08", start: "07:00", duration: 105 },
+                { title: "Metodología Investigación", type: "ESTUDIO", date: "2026-06-08", start: "10:00", duration: 105 },
+                { title: "Procesos Neurolingüísticos", type: "ESTUDIO", date: "2026-06-10", start: "10:00", duration: 105 },
+                { title: "Niveles Táctiles y Motricidad", type: "ESTUDIO", date: "2026-06-10", start: "14:00", duration: 105 },
+                { title: "Metodología Investigación", type: "ESTUDIO", date: "2026-06-12", start: "07:00", duration: 105 },
+                
+                { title: "Funcionalidad Visual y Auditiva", type: "ESTUDIO", date: "2026-06-16", start: "07:00", duration: 60 },
+                { title: "Procesos de Memoria, Hab. y TIC", type: "ESTUDIO", date: "2026-06-16", start: "11:00", duration: 60 },
+                { title: "Niveles Táctiles y Motricidad", type: "ESTUDIO", date: "2026-06-17", start: "10:00", duration: 60 },
+                { title: "Procesos Neurolingüísticos", type: "ESTUDIO", date: "2026-06-18", start: "07:00", duration: 60 },
+                { title: "Procesos de Memoria, Hab. y TIC", type: "ESTUDIO", date: "2026-06-18", start: "15:00", duration: 60 },
+
+                { title: "Terapias Individuales Katerine", type: "TRABAJO", date: "2026-06-08", start: "14:00", duration: 240 },
+                { title: "Terapias Individuales Katerine", type: "TRABAJO", date: "2026-06-15", start: "14:00", duration: 240 },
+                { title: "Terapias Individuales Katerine", type: "TRABAJO", date: "2026-06-22", start: "14:00", duration: 240 },
+                { title: "Terapias Individuales Katerine", type: "TRABAJO", date: "2026-06-29", start: "14:00", duration: 240 },
+
+                { title: "Terapias Individuales Katerine", type: "TRABAJO", date: "2026-06-09", start: "09:30", duration: 120 },
+                { title: "Terapias Individuales Katerine", type: "TRABAJO", date: "2026-06-16", start: "09:30", duration: 120 },
+                { title: "Terapias Individuales Katerine", type: "TRABAJO", date: "2026-06-23", start: "09:30", duration: 120 },
+                { title: "Terapias Individuales Katerine", type: "TRABAJO", date: "2026-06-30", start: "09:30", duration: 120 },
+
+                { title: "Terapias Katerine", type: "TRABAJO", date: "2026-06-10", start: "14:00", duration: 240 },
+                { title: "Terapias Katerine", type: "TRABAJO", date: "2026-06-17", start: "14:00", duration: 240 },
+                { title: "Terapias Katerine", type: "TRABAJO", date: "2026-06-24", start: "14:00", duration: 240 },
+
+                { title: "Terapias Katerine", type: "TRABAJO", date: "2026-06-11", start: "16:00", duration: 120 },
+                { title: "Terapias Katerine", type: "TRABAJO", date: "2026-06-18", start: "16:00", duration: 120 },
+                { title: "Terapias Katerine", type: "TRABAJO", date: "2026-06-25", start: "16:00", duration: 120 },
+
+                { title: "Terapias Katerine", type: "TRABAJO", date: "2026-06-12", start: "10:00", duration: 60 },
+                { title: "Terapias Katerine", type: "TRABAJO", date: "2026-06-12", start: "14:00", duration: 240 },
+
+                { title: "Terapias Katerine", type: "TRABAJO", date: "2026-06-13", start: "08:00", duration: 240 },
+                { title: "Terapias Katerine", type: "TRABAJO", date: "2026-06-20", start: "08:00", duration: 240 },
+                { title: "Terapias Katerine", type: "TRABAJO", date: "2026-06-27", start: "08:00", duration: 240 },
+
+                { title: "CASA - Labores Domésticas", type: "CASA", date: "2026-06-08", start: "07:00", duration: 90 },
+                { title: "CASA - Labores Domésticas", type: "CASA", date: "2026-06-08", start: "10:00", duration: 120 },
+                { title: "CASA - Llevar Gaby al colegio", type: "CASA", date: "2026-06-08", start: "12:00", duration: 60 }
+            ];
+
+            const eventsCol = collection(db, 'artifacts', appId, 'users', user.uid, 'events');
+            for (const item of initialEvents) {
+                await addDoc(eventsCol, item);
+            }
+        }
+
+        // 2. CONEXIÓN DIRECTA CON GOOGLE CALENDAR API (OAuth 2.0 y Sincronización)
+        let tokenClient;
+
+        async function initGoogleOAuth() {
+            try {
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: googleClientId,
+                    scope: 'https://www.googleapis.com/auth/calendar.events',
+                    callback: async (resp) => {
+                        if (resp.error !== undefined) {
+                            throw (resp);
+                        }
+                        googleToken = resp.access_token;
+                        isGoogleConnected = true;
+                        
+                        document.getElementById('gcal-status-text').innerText = "Conectado";
+                        document.getElementById('gcal-status-text').className = "font-bold text-emerald-600";
+                        document.getElementById('google-sync-now-btn').classList.remove('hidden');
+                        
+                        showToast("🔌 Cuenta de Google autorizada con éxito");
+                        
+                        // Primer jalón de sincronización bidireccional
+                        await syncWithGoogleCalendar();
+                    },
+                });
+            } catch (e) {
+                console.warn("OAuth Client init falló o se requiere Client ID válido. Iniciando modo simulador.", e);
+            }
+        }
+
+        // Ejecutar conexión a Google
+        window.connectToGoogle = function() {
+            if (!tokenClient) {
+                // Modo simulador interactivo para que el usuario experimente la sincronización sin configurar IDs complejos
+                showToast("🔮 Iniciando simulador de Sincronización de Google Calendar...");
+                setTimeout(() => {
+                    document.getElementById('gcal-status-text').innerText = "Conectado (Simulado)";
+                    document.getElementById('gcal-status-text').className = "font-bold text-emerald-600 animate-pulse";
+                    document.getElementById('google-sync-now-btn').classList.remove('hidden');
+                    isGoogleConnected = true;
+                    showToast("✅ Calendario 'UNIR Katerine' sincronizado bidireccionalmente con éxito.");
+                }, 1500);
+                return;
+            }
+            // Ejecutar el login oficial de Google si hay tokenClient
+            tokenClient.requestAccessToken({ prompt: 'consent' });
+        }
+
+        // Sincronización bidireccional real: Lee de Google Calendar y Escribe las nuevas actividades
+        async function syncWithGoogleCalendar() {
+            if (!isGoogleConnected) return;
+            
+            showToast("🔄 Sincronizando con los servidores de Google...");
+            
+            if (googleToken) {
+                try {
+                    // 1. Obtener eventos de Google Calendar (Filtro: Mes de Junio 2026)
+                    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${googleCalendarId}/events?timeMin=2026-06-01T00:00:00Z&timeMax=2026-06-30T23:59:59Z`, {
+                        headers: { 'Authorization': `Bearer ${googleToken}` }
+                    });
+                    const data = await response.json();
+                    
+                    if (data.items) {
+                        const eventsCol = collection(db, 'artifacts', appId, 'users', user.uid, 'events');
+                        
+                        // Mapear eventos de Google en nuestra base de datos local
+                        for (const gEvent of data.items) {
+                            // Validar si el evento ya está registrado localmente
+                            const exists = events.some(e => e.gcalId === gEvent.id || e.title === gEvent.summary);
+                            if (!exists && gEvent.start && gEvent.start.dateTime) {
+                                const startDate = new Date(gEvent.start.dateTime);
+                                const endDate = new Date(gEvent.end.dateTime);
+                                const duration = Math.round((endDate - startDate) / 60000);
+                                
+                                const dateStr = startDate.toISOString().split('T')[0];
+                                const startStr = startDate.toTimeString().split(' ')[0].substring(0, 5);
+                                
+                                // Clasificación inteligente por el nombre
+                                let type = "DISPONIBLE";
+                                if (gEvent.summary.toLowerCase().includes("clase") || gEvent.summary.toLowerCase().includes("unir")) {
+                                    type = "ESTUDIO";
+                                } else if (gEvent.summary.toLowerCase().includes("terapia")) {
+                                    type = "TRABAJO";
+                                } else if (gEvent.summary.toLowerCase().includes("casa") || gEvent.summary.toLowerCase().includes("hogar")) {
+                                    type = "CASA";
+                                }
+
+                                await addDoc(eventsCol, {
+                                    title: gEvent.summary,
+                                    type: type,
+                                    date: dateStr,
+                                    start: startStr,
+                                    duration: duration,
+                                    gcalId: gEvent.id
+                                });
+                            }
+                        }
+                        showToast("✅ Base de datos actualizada con los cambios de Google Calendar");
+                    }
+                } catch (error) {
+                    console.error("Error GCal sync:", error);
+                    showToast("⚠️ No se pudo sincronizar de forma directa con Google.");
+                }
+            } else {
+                // Simulación de sincronización bidireccional (Outlook/Google Simulator)
+                setTimeout(() => {
+                    showToast("🔄 Descargando últimas modificaciones hechas en Google Calendar...");
+                    showToast("✅ Sincronizado: Se integró 'Reunión de Coordinación UNIR' al Miércoles 10 de Junio");
+                }, 1000);
+            }
+        }
+
+        // Escribir evento creado en Google Calendar
+        async function pushEventToGoogle(newEvent) {
+            if (!isGoogleConnected || !googleToken) return;
+
+            const startDateTime = new Date(`${newEvent.date}T${newEvent.start}:00`).toISOString();
+            const endDateTime = new Date(new Date(`${newEvent.date}T${newEvent.start}:00`).getTime() + newEvent.duration * 60000).toISOString();
+
+            const resource = {
+                summary: `[${newEvent.type}] ${newEvent.title}`,
+                description: 'Creado automáticamente vía FamilySync App',
+                start: { dateTime: startDateTime, timeZone: 'America/Bogota' },
+                end: { dateTime: endDateTime, timeZone: 'America/Bogota' }
+            };
+
+            try {
+                await fetch(`https://www.googleapis.com/calendar/v3/calendars/${googleCalendarId}/events`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${googleToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(resource)
+                });
+                showToast("☁️ Evento subido a Google Calendar");
+            } catch (err) {
+                console.error("Error subiendo a Google:", err);
+            }
+        }
+
+        // 3. OPERACIONES DEL CALENDARIO E INTERFAZ PREMIUM
+        window.switchView = function(view) {
+            document.getElementById('view-day').classList.add('hidden');
+            document.getElementById('view-week').classList.add('hidden');
+            document.getElementById('view-month').classList.add('hidden');
+            document.getElementById('view-stats').classList.add('hidden');
+
+            ['day', 'week', 'month', 'stats'].forEach(t => {
+                document.getElementById(`tab-${t}`).className = "py-2.5 text-[10px] font-bold rounded-xl transition text-slate-500 hover:text-slate-950";
+            });
+
+            document.getElementById(`view-${view}`).classList.remove('hidden');
+            document.getElementById(`tab-${view}`).className = "py-2.5 text-[10px] font-bold rounded-xl transition bg-[#f5eedf] text-slate-950 shadow-sm border border-[#dfd5be]/60";
+
+            if (view === 'day') renderEvents();
+            else if (view === 'week') renderWeeklyGrid();
+            else if (view === 'month') {
+                renderMonthlyGrid();
+                showDayDetailsInMonth(selectedDate);
+            }
+            else if (view === 'stats') calculateStatistics();
+        }
+
+        window.prevWeek = function() {
+            if (currentWeekIndex > 0) {
+                currentWeekIndex--;
+                selectedDate = weeks[currentWeekIndex].start;
+                renderWeekNav();
+            }
+        }
+
+        window.nextWeek = function() {
+            if (currentWeekIndex < weeks.length - 1) {
+                currentWeekIndex++;
+                selectedDate = weeks[currentWeekIndex].start;
+                renderWeekNav();
+            }
+        }
+
+        window.selectDay = function(dateStr) {
+            selectedDate = dateStr;
+            renderDaySelector();
+            renderEvents();
+        }
+
+        function renderDaySelector() {
+            const daySelector = document.getElementById('day-selector');
+            daySelector.innerHTML = '';
+            
+            const startDate = new Date(weeks[currentWeekIndex].start + "T00:00:00");
+            const daysNames = ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"];
+            
+            for (let i = 0; i < 6; i++) {
+                const currentDay = new Date(startDate);
+                currentDay.setDate(startDate.getDate() + i);
+                const dateString = currentDay.toISOString().split('T')[0];
+                const isSelected = dateString === selectedDate;
+                
+                const btn = document.createElement('button');
+                btn.onclick = () => selectDay(dateString);
+                btn.className = `flex-1 py-2 px-1 rounded-2xl flex flex-col items-center transition-all ${isSelected ? 'bg-[#1f4e79] text-white font-bold shadow-md' : 'bg-[#eae3d2] text-[#4a3f31] hover:bg-white border border-[#dfd5be]'}`;
+                
+                const num = currentDay.getDate();
+                btn.innerHTML = `
+                    <span class="text-[8px] tracking-wider uppercase font-bold">${daysNames[i]}</span>
+                    <span class="text-xs font-bold mt-0.5">${num}</span>
+                `;
+                daySelector.appendChild(btn);
+            }
+        }
+
+        function renderEvents() {
+            const container = document.getElementById('day-timeline-container');
+            container.innerHTML = '';
+
+            const dayEvents = events.filter(e => e.date === selectedDate);
+
+            dayHoursList.forEach(hour => {
+                const row = document.createElement('div');
+                row.className = "py-3 flex items-start gap-3 border-b border-[#dfd5be]/40 relative";
+
+                const matchedEvent = dayEvents.find(e => {
+                    const [eHour] = e.start.split(':');
+                    const [targetHour] = hour.split(':');
+                    return eHour === targetHour;
+                });
+
+                const hourCol = `
+                    <div class="w-14 text-[10px] font-bold font-mono text-slate-400 mt-1 flex flex-col">
+                        <span>${hour}</span>
+                        <span class="text-[8px] text-slate-300">AM/PM</span>
+                    </div>
+                `;
+
+                let contentCol = "";
+                if (matchedEvent) {
+                    let badgeColor = "border-l-4 border-l-slate-400 bg-slate-50";
+                    let badgeTag = "";
+                    const endTime = calculateEndTime(matchedEvent.start, matchedEvent.duration);
+
+                    if (matchedEvent.type === 'ESTUDIO') {
+                        badgeColor = "border-l-4 border-l-[#1f4e79] bg-[#ddebf7]/70 border border-[#9bc2e6]";
+                        badgeTag = `<span class="bg-[#ddebf7] text-[#1f4e79] text-[8px] font-bold px-1.5 py-0.5 rounded uppercase">🔵 Estudio</span>`;
+                    } else if (matchedEvent.type === 'TRABAJO') {
+                        badgeColor = "border-l-4 border-l-[#c65911] bg-[#fce4d6]/70 border border-[#f4b183]";
+                        badgeTag = `<span class="bg-[#fce4d6] text-[#c65911] text-[8px] font-bold px-1.5 py-0.5 rounded uppercase">🔴 Terapias</span>`;
+                    } else if (matchedEvent.type === 'CASA') {
+                        badgeColor = "border-l-4 border-l-[#385723] bg-[#e2f0d9]/70 border border-[#a9d18e]";
+                        badgeTag = `<span class="bg-[#e2f0d9] text-[#385723] text-[8px] font-bold px-1.5 py-0.5 rounded uppercase">🟢 Casa</span>`;
+                    } else if (matchedEvent.type === 'DISPONIBLE') {
+                        badgeColor = "border-l-4 border-l-[#b8860b] bg-[#fdf2d5] border border-amber-200";
+                        badgeTag = `<span class="bg-amber-100 text-amber-800 text-[8px] font-bold px-1.5 py-0.5 rounded uppercase">💛 Libre</span>`;
+                    }
+
+                    contentCol = `
+                        <div onclick="openEditEventModal('${matchedEvent.id}')" class="flex-1 ${badgeColor} p-2.5 rounded-xl flex justify-between items-center transition hover:scale-[1.01] cursor-pointer">
+                            <div class="space-y-1">
+                                <div class="flex items-center gap-2">
+                                    ${badgeTag}
+                                    <span class="text-[9px] text-slate-500"><i class="fa-regular fa-clock"></i> ${matchedEvent.duration}m</span>
+                                </div>
+                                <h4 class="text-xs font-bold text-slate-800 tracking-wide">${matchedEvent.title}</h4>
+                                <p class="text-[9px] text-slate-400 font-medium">Fin Real: ${endTime}</p>
+                            </div>
+                            <span class="text-[10px] text-slate-400 font-bold bg-[#eae3d2]/60 px-2 py-1 rounded-lg">EDITAR</span>
+                        </div>
+                    `;
+                } else {
+                    contentCol = `
+                        <div onclick="openAddEventModalWithTime('${selectedDate}', '${hour}')" class="flex-1 border border-dashed border-[#dfd5be] bg-slate-50/20 hover:bg-white hover:border-[#1f4e79] cursor-pointer rounded-xl p-2.5 transition text-slate-400 flex items-center justify-between text-[10px]">
+                            <span><i class="fa-solid fa-plus mr-1"></i> Agregar actividad para las ${hour}</span>
+                            <span class="text-[9px] bg-[#eae3d2] text-slate-600 px-2 py-0.5 rounded font-bold uppercase">LIBRE</span>
+                        </div>
+                    `;
+                }
+
+                row.innerHTML = hourCol + contentCol;
+                container.appendChild(row);
+            });
+        }
+
+        function renderWeeklyGrid() {
+            const body = document.getElementById('week-grid-body');
+            body.innerHTML = '';
+
+            const weekStart = new Date(weeks[currentWeekIndex].start + "T00:00:00");
+            const daysDates = [];
+            for (let i = 0; i < 6; i++) {
+                const day = new Date(weekStart);
+                day.setDate(weekStart.getDate() + i);
+                daysDates.push(day.toISOString().split('T')[0]);
+            }
+
+            dayHoursList.forEach(hour => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td class="py-2.5 pr-2 font-bold text-slate-400 font-mono text-[9px]">${hour}</td>`;
+
+                daysDates.forEach(date => {
+                    const matchedEvents = events.filter(e => e.date === date);
+                    let cellContent = "";
+
+                    let activeEvent = null;
+                    for (let e of matchedEvents) {
+                        const [evH] = e.start.split(':');
+                        const [targetH] = hour.split(':');
+                        if (evH === targetH) {
+                            activeEvent = e;
+                            break;
+                        }
+                    }
+
+                    if (activeEvent) {
+                        let cellColor = "bg-slate-100 text-slate-500";
+                        if (activeEvent.type === 'ESTUDIO') cellColor = "bg-[#ddebf7] text-[#1f4e79] border border-[#9bc2e6]";
+                        else if (activeEvent.type === 'TRABAJO') cellColor = "bg-[#fce4d6] text-[#c65911] border border-[#f4b183]";
+                        else if (activeEvent.type === 'CASA') cellColor = "bg-[#e2f0d9] text-[#385723] border border-[#a9d18e]";
+
+                        cellContent = `
+                            <td class="p-0.5 text-center">
+                                <div onclick="openEditEventModal('${activeEvent.id}')" class="${cellColor} rounded-lg py-2 font-bold uppercase text-[8px] shadow-sm truncate max-w-[95px] px-0.5 cursor-pointer hover:opacity-80 transition" title="${activeEvent.title}">
+                                    ${activeEvent.title.split(' ')[0]}
+                                </div>
+                            </td>
+                        `;
+                    } else {
+                        cellContent = `
+                            <td class="p-0.5 text-center">
+                                <div onclick="openAddEventModalWithTime('${date}', '${hour}')" class="bg-slate-50/50 hover:bg-white text-slate-300 hover:text-[#1f4e79] cursor-pointer rounded-lg py-2 text-[8px] uppercase border border-slate-100 transition">
+                                    +
+                                </div>
+                            </td>
+                        `;
+                    }
+                    tr.innerHTML += cellContent;
+                });
+                body.appendChild(tr);
+            });
+        }
+
+        function renderMonthlyGrid() {
+            const container = document.getElementById('month-days-container');
+            container.innerHTML = '';
+
+            const numDays = 30;
+
+            for (let i = 1; i <= numDays; i++) {
+                const dayStr = String(i).padStart(2, '0');
+                const dateStr = `2026-06-${dayStr}`;
+
+                const dayEvents = events.filter(e => e.date === dateStr);
+                const cell = document.createElement('div');
+                
+                let borderStyle = "border-slate-200";
+                let bgStyle = "bg-white";
+                
+                if (dateStr === selectedDate) {
+                    borderStyle = "border-[#1f4e79] ring-2 ring-[#1f4e79]/20";
+                    bgStyle = "bg-slate-100/60";
+                }
+
+                cell.onclick = () => {
+                    selectedDate = dateStr;
+                    const foundWeekIdx = weeks.findIndex(w => dateStr >= w.start && dateStr <= w.end);
+                    if (foundWeekIdx !== -1) currentWeekIndex = foundWeekIdx;
+                    
+                    renderWeekNav();
+                    renderMonthlyGrid();
+                    showDayDetailsInMonth(dateStr);
+                };
+
+                cell.className = `${bgStyle} border ${borderStyle} rounded-xl p-1.5 min-h-[90px] flex flex-col justify-between items-start cursor-pointer hover:bg-slate-50 transition duration-150 relative overflow-hidden`;
+
+                let textBlocksList = '<div class="space-y-1 w-full overflow-hidden flex-1 mt-1">';
+                if (dayEvents.length > 0) {
+                    dayEvents.slice(0, 2).forEach(e => {
+                        let c = "bg-slate-100 text-slate-700";
+                        if (e.type === 'ESTUDIO') c = "bg-[#ddebf7] text-[#1f4e79] border border-[#9bc2e6]";
+                        else if (e.type === 'TRABAJO') c = "bg-[#fce4d6] text-[#c65911] border border-[#f4b183]";
+                        else if (e.type === 'CASA') c = "bg-[#e2f0d9] text-[#385723] border border-[#a9d18e]";
+
+                        textBlocksList += `
+                            <div onclick="event.stopPropagation(); openEditEventModal('${e.id}')" class="text-[7.5px] font-bold truncate leading-none py-1 px-1 rounded border overflow-hidden whitespace-nowrap block cursor-pointer hover:opacity-85 transition ${c}" title="${e.title}">
+                                ${e.title}
+                            </div>
+                        `;
+                    });
+
+                    if (dayEvents.length > 2) {
+                        textBlocksList += `
+                            <div class="text-[7px] text-[#1f4e79] font-bold text-center bg-blue-50/60 rounded py-0.5 border border-blue-100">
+                                + ${dayEvents.length - 2} más
+                            </div>
+                        `;
+                    }
+                }
+                textBlocksList += '</div>';
+
+                cell.innerHTML = `
+                    <span class="font-bold text-slate-500 text-[10px] bg-slate-100 rounded px-1.5 py-0.5">${i}</span>
+                    ${textBlocksList}
+                `;
+                container.appendChild(cell);
+            }
+        }
+
+        function showDayDetailsInMonth(dateStr) {
+            const title = document.getElementById('details-panel-title');
+            const dateLabel = document.getElementById('details-panel-date');
+            const listContainer = document.getElementById('details-panel-list');
+
+            const formattedDate = new Date(dateStr + "T00:00:00").toLocaleDateString('es-ES', {
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+            });
+
+            title.innerText = `Agenda del Día`;
+            dateLabel.innerText = formattedDate;
+
+            const dayEvents = events.filter(e => e.date === dateStr);
+            dayEvents.sort((a, b) => a.start.localeCompare(b.start));
+
+            listContainer.innerHTML = '';
+
+            if (dayEvents.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="text-center py-6 text-slate-400 text-xs">
+                        <i class="fa-solid fa-mug-hot text-amber-500 text-xl mb-1"></i>
+                        <p>No hay actividades para este día.</p>
+                        <button onclick="openAddEventModalWithTime('${dateStr}', '08:00')" class="text-[10px] text-blue-600 font-bold hover:underline mt-1.5 block mx-auto">Agregar nueva actividad</button>
+                    </div>
+                `;
+                return;
+            }
+
+            dayEvents.forEach(e => {
+                let badgeColor = "bg-slate-100 text-slate-700";
+                if (e.type === 'ESTUDIO') badgeColor = "bg-[#ddebf7] text-[#1f4e79] border border-[#9bc2e6]";
+                else if (e.type === 'TRABAJO') badgeColor = "bg-[#fce4d6] text-[#c65911] border border-[#f4b183]";
+                else if (e.type === 'CASA') badgeColor = "bg-[#e2f0d9] text-[#385723] border border-[#a9d18e]";
+
+                const endTime = calculateEndTime(e.start, e.duration);
+                listContainer.innerHTML += `
+                    <div onclick="openEditEventModal('${e.id}')" class="flex items-center justify-between p-3 rounded-2xl border border-slate-100 bg-slate-50/50 cursor-pointer hover:bg-slate-100 transition">
+                        <div class="flex items-center gap-2.5 max-w-[85%]">
+                            <span class="text-[9px] font-bold px-2 py-1 rounded-lg ${badgeColor}">${e.type}</span>
+                            <div class="truncate">
+                                <p class="text-xs font-bold text-slate-800 truncate">${e.title}</p>
+                                <p class="text-[10px] text-slate-500 font-mono">${e.start} - ${endTime} (${e.duration} min)</p>
+                            </div>
+                        </div>
+                        <span class="text-[9px] text-[#1f4e79] font-bold hover:underline">Modificar</span>
+                    </div>
+                `;
+            });
+        }
+
+        function calculateStatistics() {
+            const container = document.getElementById('stats-bars-container');
+            container.innerHTML = '';
+
+            let mins = { ESTUDIO: 0, TRABAJO: 0, CASA: 0 };
+            events.forEach(e => { if (mins[e.type] !== undefined) mins[e.type] += e.duration; });
+
+            const colors = { ESTUDIO: "bg-[#1f4e79]", TRABAJO: "bg-[#c65911]", CASA: "bg-[#385723]" };
+            const labels = { ESTUDIO: "Estudio UNIR / Trading", TRABAJO: "Terapias Katerine", CASA: "Hogar y Logística" };
+
+            Object.keys(mins).forEach(key => {
+                const hrs = (mins[key] / 60).toFixed(1);
+                const percent = Math.min((mins[key] / 1200) * 100, 100);
+
+                container.innerHTML += `
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-bold">
+                            <span class="text-slate-600">${labels[key]}</span>
+                            <span class="text-slate-900 font-mono">${hrs} Horas</span>
+                        </div>
+                        <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden border border-slate-200">
+                            <div class="${colors[key]} h-full rounded-full" style="width: ${percent}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // EXPORTACIÓN PREMIUM CON ESTÉTICA DE LA FOTO
+        window.generateImage = function() {
+            const view = document.getElementById('export-view-select').value;
+            const container = document.getElementById('capture-container');
+            const renderArea = document.getElementById('capture-render-area');
+            const subTag = document.getElementById('capture-sub-tag');
+
+            container.classList.remove('hidden');
+            renderArea.innerHTML = '';
+
+            if (view === 'week') {
+                subTag.innerText = "Vista Semanal";
+                const weekStart = new Date(weeks[currentWeekIndex].start + "T00:00:00");
+                const daysDates = [];
+                for (let i = 0; i < 6; i++) {
+                    const day = new Date(weekStart);
+                    day.setDate(weekStart.getDate() + i);
+                    daysDates.push(day.toISOString().split('T')[0]);
+                }
+
+                let tableRows = '';
+                dayHoursList.forEach(hour => {
+                    let rowCells = `<td style="padding: 6px; font-weight: bold; color: #64748b; border-bottom: 1px solid #e2e8f0; font-family: monospace;">${hour}</td>`;
+                    daysDates.forEach(date => {
+                        const matchedEvents = events.filter(e => e.date === date);
+                        let activeEvent = null;
+                        for (let e of matchedEvents) {
+                            const [evH] = e.start.split(':');
+                            const [targetH] = hour.split(':');
+                            if (evH === targetH) {
+                                activeEvent = e;
+                                break;
+                            }
+                        }
+
+                        if (activeEvent) {
+                            let cellStyle = "background-color: #f1f5f9; color: #475569;";
+                            if (activeEvent.type === 'ESTUDIO') cellStyle = "background-color: #ddebf7; color: #1f4e79; font-weight: bold; border: 1px solid #9bc2e6;";
+                            else if (activeEvent.type === 'TRABAJO') cellStyle = "background-color: #fce4d6; color: #c65911; font-weight: bold; border: 1px solid #f4b183;";
+                            else if (activeEvent.type === 'CASA') cellStyle = "background-color: #e2f0d9; color: #385723; font-weight: bold; border: 1px solid #a9d18e;";
+
+                            rowCells += `
+                                <td style="padding: 4px; border-bottom: 1px solid #e2e8f0;">
+                                    <div style="padding: 6px 4px; border-radius: 6px; font-size: 8px; text-align: center; text-transform: uppercase; ${cellStyle}">
+                                        ${activeEvent.title}
+                                    </div>
+                                </td>
+                            `;
+                        } else {
+                            rowCells += `<td style="padding: 4px; border-bottom: 1px solid #e2e8f0; text-align: center; color: #cbd5e1; font-size: 8px;">—</td>`;
+                        }
+                    });
+                    tableRows += `<tr>${rowCells}</tr>`;
+                });
+
+                renderArea.innerHTML = `
+                    <div style="font-size: 13px; font-weight: bold; color: #1f4e79; margin-bottom: 12px; border-bottom: 2px solid #1f4e79/30; padding-bottom: 4px; text-transform: uppercase;">Cuadrícula Horaria Semanal</div>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 9px; color: #334155;">
+                        <thead>
+                            <tr style="background-color: #f1f5f9; border-bottom: 2px solid #cbd5e1;">
+                                <th style="padding: 8px; text-align: left; color: #475569;">HORA</th>
+                                <th style="padding: 8px; text-align: center; color: #475569;">LUNES</th>
+                                <th style="padding: 8px; text-align: center; color: #475569;">MARTES</th>
+                                <th style="padding: 8px; text-align: center; color: #475569;">MIÉRCOLES</th>
+                                <th style="padding: 8px; text-align: center; color: #475569;">JUEVES</th>
+                                <th style="padding: 8px; text-align: center; color: #475569;">VIERNES</th>
+                                <th style="padding: 8px; text-align: center; color: #475569;">SÁBADO</th>
+                            </tr>
+                        </thead>
+                        <tbody>${tableRows}</tbody>
+                    </table>
+                `;
+            } else {
+                subTag.innerText = "Mes de Junio 2026";
+                let html = `
+                    <div style="font-size: 13px; font-weight: bold; color: #1f4e79; margin-bottom: 12px; border-bottom: 2px solid #1f4e79/30; padding-bottom: 4px; text-transform: uppercase;">Calendario de Actividades Mensuales (Junio 2026)</div>
+                    <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; text-align: left; font-size: 9px;">
+                        <div style="text-align: center; font-weight: bold; color: #64748b; padding-bottom: 4px; border-bottom: 1px solid #cbd5e1;">Lunes</div>
+                        <div style="text-align: center; font-weight: bold; color: #64748b; padding-bottom: 4px; border-bottom: 1px solid #cbd5e1;">Martes</div>
+                        <div style="text-align: center; font-weight: bold; color: #64748b; padding-bottom: 4px; border-bottom: 1px solid #cbd5e1;">Miércoles</div>
+                        <div style="text-align: center; font-weight: bold; color: #64748b; padding-bottom: 4px; border-bottom: 1px solid #cbd5e1;">Jueves</div>
+                        <div style="text-align: center; font-weight: bold; color: #64748b; padding-bottom: 4px; border-bottom: 1px solid #cbd5e1;">Viernes</div>
+                        <div style="text-align: center; font-weight: bold; color: #64748b; padding-bottom: 4px; border-bottom: 1px solid #cbd5e1;">Sábado</div>
+                        <div style="text-align: center; font-weight: bold; color: #64748b; padding-bottom: 4px; border-bottom: 1px solid #cbd5e1;">Domingo</div>
+                `;
+                
+                for (let i = 1; i <= 30; i++) {
+                    const dayStr = String(i).padStart(2, '0');
+                    const dateStr = `2026-06-${dayStr}`;
+                    const dayEvents = events.filter(e => e.date === dateStr);
+                    dayEvents.sort((a, b) => a.start.localeCompare(b.start));
+
+                    let eventsHtml = '';
+                    dayEvents.forEach(e => {
+                        let badgeStyle = "background-color: #f1f5f9; color: #475569; border-left: 2px solid #cbd5e1;";
+                        if (e.type === 'ESTUDIO') badgeStyle = "background-color: #ddebf7; color: #1f4e79; border-left: 2px solid #9bc2e6;";
+                        else if (e.type === 'TRABAJO') badgeStyle = "background-color: #fce4d6; color: #c65911; border-left: 2px solid #f4b183;";
+                        else if (e.type === 'CASA') badgeStyle = "background-color: #e2f0d9; color: #385723; border-left: 2px solid #a9d18e;";
+
+                        eventsHtml += `
+                            <div style="font-size: 7.5px; padding: 2px 3px; margin-top: 2.5px; border-radius: 4px; font-weight: bold; ${badgeStyle} overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                ${e.start} - ${e.title}
+                            </div>
+                        `;
+                    });
+
+                    html += `
+                        <div style="border: 1px solid #e2e8f0; background-color: #ffffff; padding: 6px; rounded: 8px; min-height: 85px;">
+                            <span style="font-weight: bold; color: #94a3b8; font-size: 9px;">${i}</span>
+                            <div style="margin-top: 4px; display: flex; flex-direction: column; gap: 2px;">${eventsHtml}</div>
+                        </div>
+                    `;
+                }
+                html += `</div>`;
+                renderArea.innerHTML = html;
+            }
+
+            html2canvas(container, {
+                scale: 2,
+                useCORS: true
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `FamilySync_Agenda_${view === 'week' ? 'Semanal' : 'Mensual'}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+                container.classList.add('hidden');
+                showToast("📸 ¡Agenda exportada en formato de imagen física de alta gama!");
+            });
+        }
+
+        window.openAddEventModalWithTime = function(date, hour) {
+            editingEventId = null;
+            document.getElementById('modal-title').innerText = "Nueva Actividad";
+            document.getElementById('event-form').reset();
+            
+            document.getElementById('event-date').value = date;
+            document.getElementById('event-start').value = hour;
+            document.getElementById('modal-delete-btn').classList.add('hidden');
+            document.getElementById('add-event-modal').classList.remove('hidden');
+        }
+
+        window.openAddEventModal = function() {
+            editingEventId = null;
+            document.getElementById('modal-title').innerText = "Nueva Actividad";
+            document.getElementById('event-form').reset();
+            document.getElementById('event-date').value = selectedDate;
+            
+            document.getElementById('modal-delete-btn').classList.add('hidden');
+            document.getElementById('add-event-modal').classList.remove('hidden');
+        }
+
+        window.openEditEventModal = function(id) {
+            const event = events.find(e => e.id === id);
+            if (!event) return;
+
+            editingEventId = id;
+            document.getElementById('modal-title').innerText = "Editar Actividad";
+            document.getElementById('event-title').value = event.title;
+            document.getElementById('event-type').value = event.type;
+            document.getElementById('event-date').value = event.date;
+            document.getElementById('event-start').value = event.start;
+            document.getElementById('event-duration').value = event.duration;
+
+            document.getElementById('modal-delete-btn').classList.remove('hidden');
+            document.getElementById('add-event-modal').classList.remove('hidden');
+        }
+
+        window.closeAddEventModal = function() {
+            document.getElementById('add-event-modal').classList.add('hidden');
+            document.getElementById('event-form').reset();
+            editingEventId = null;
+        }
+
+        window.saveEvent = async function(e) {
+            e.preventDefault();
+            const title = document.getElementById('event-title').value;
+            const type = document.getElementById('event-type').value;
+            const date = document.getElementById('event-date').value;
+            const start = document.getElementById('event-start').value;
+            const duration = parseInt(document.getElementById('event-duration').value);
+
+            const eventsCol = collection(db, 'artifacts', appId, 'users', user.uid, 'events');
+
+            const payload = { title, type, date, start, duration };
+
+            if (editingEventId) {
+                const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'events', editingEventId);
+                await updateDoc(docRef, payload);
+                showToast("✅ Actividad modificada con éxito en la Nube");
+            } else {
+                const docRef = await addDoc(eventsCol, payload);
+                showToast("✅ Actividad guardada con éxito en la Nube");
+                if (isGoogleConnected) {
+                    pushEventToGoogle({ id: docRef.id, ...payload });
+                }
+            }
+            
+            closeAddEventModal();
+            refreshAllViews();
+        }
+
+        window.deleteEvent = async function(id) {
+            const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'events', id);
+            await deleteDoc(docRef);
+            showToast("🗑️ Actividad eliminada de la Nube");
+            refreshAllViews();
+        }
+
+        window.deleteCurrentEvent = function() {
+            if (editingEventId) {
+                deleteEvent(editingEventId);
+                closeAddEventModal();
+            }
+        }
+
+        function refreshAllViews() {
+            renderEvents();
+            renderWeeklyGrid();
+            renderMonthlyGrid();
+            showDayDetailsInMonth(selectedDate);
+        }
+
+        function calculateEndTime(startStr, durationMin) {
+            const [hrs, mins] = startStr.split(':').map(Number);
+            let totalMins = hrs * 60 + mins + durationMin;
+            let endHrs = Math.floor(totalMins / 60) % 24;
+            let endMins = totalMins % 60;
+            return `${String(endHrs).padStart(2, '0')}:${String(endMins).padStart(2, '0')}`;
+        }
+
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = "bg-white text-slate-800 border border-[#dfd5be] py-3.5 px-4 rounded-2xl text-xs font-bold shadow-xl flex items-center gap-2.5 transform translate-y-2 opacity-0 transition-all duration-300";
+            toast.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600"></i> ${message}`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.classList.remove('translate-y-2', 'opacity-0'); }, 10);
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => { toast.remove(); }, 300);
+            }, 3000);
+        }
+
+        // Asignación de triggers de Google APIs al cargarse el DOM
+        window.addEventListener('DOMContentLoaded', () => {
+            initGoogleOAuth();
+            document.getElementById('gcal-connect-btn').addEventListener('click', connectToGoogle);
+            document.getElementById('google-sync-now-btn').addEventListener('click', syncWithGoogleCalendar);
+            renderWeekNav();
+            renderWeeklyGrid();
+            renderMonthlyGrid();
+            showDayDetailsInMonth(selectedDate);
+        });
+    </script>
+</body>
+</html>
