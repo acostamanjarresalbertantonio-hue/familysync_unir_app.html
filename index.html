@@ -198,15 +198,39 @@
             <!-- 4. PESTAÑA DE CONEXIÓN Y DIAGNÓSTICO -->
             <div id="view-stats" class="hidden space-y-4">
                 
-                <!-- ALERTA DE CLIENT ID NO CONFIGURADO -->
-                <div id="gcal-id-warning" class="hidden bg-amber-50 border border-amber-300 rounded-3xl p-4 space-y-2 text-xs text-amber-900">
-                    <div class="flex items-center gap-2 font-bold">
-                        <i class="fa-solid fa-triangle-exclamation text-amber-600 text-sm"></i>
-                        <span>ID de Google no configurado</span>
+                <!-- GUÍA INTERACTIVA DE CORRECCIÓN GOOGLE CLOUD (REEMPLAZA ALERTA SIMPLE) -->
+                <div class="bg-amber-50 border border-amber-300 rounded-3xl p-5 space-y-3 text-xs text-amber-900 shadow-sm">
+                    <div class="flex items-center gap-2 font-bold text-[#1f4e79]">
+                        <i class="fa-solid fa-circle-info text-amber-600 text-base"></i>
+                        <span class="text-xs uppercase tracking-wider">💡 Guía para solucionar tu error de Google Cloud</span>
                     </div>
-                    <p class="leading-relaxed">Tu aplicación sigue utilizando la clave de prueba genérica. Para que la sincronización con tu cuenta real funcione, debes reemplazar el ID en tu archivo HTML de GitHub.</p>
-                    <div class="bg-amber-100/50 p-2.5 rounded-xl font-mono text-[9px] text-amber-800 break-all border border-amber-200">
-                        Línea 588: let googleClientId = "tu-ID-de-google-cloud";
+                    <p class="leading-relaxed">Hemos detectado el error de tu captura en tu consola de Google. Para que la conexión de Google Calendar sea **REAL y no simulada**, sigue estos rápidos pasos en tu panel de Google Cloud:</p>
+                    
+                    <div class="space-y-3.5 bg-white/70 p-4 rounded-2xl border border-amber-200">
+                        <div>
+                            <span class="font-bold text-[#1f4e79]">Paso 1:</span> En tu consola, ve a "Orígenes de JavaScript autorizados" y borra el enlace largo que tiene el error de barra inclinada.
+                        </div>
+                        <div>
+                            <span class="font-bold text-[#1f4e79]">Paso 2:</span> Copia este origen exacto con el botón de abajo y pégalo allí:
+                            <div class="flex gap-2 mt-1.5">
+                                <input type="text" readonly value="https://acostamanjarresalbertantonio-hue.github.io" class="flex-1 bg-slate-100 border border-slate-200 p-2.5 rounded-xl font-mono text-[9px] text-slate-700">
+                                <button onclick="window.copyText('https://acostamanjarresalbertantonio-hue.github.io', 'btn-copy-origin')" id="btn-copy-origin" class="bg-[#1f4e79] text-white px-3 py-1.5 rounded-xl font-bold text-[10px] active:scale-95 transition">
+                                    <i class="fa-regular fa-copy"></i> Copiar
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="font-bold text-[#1f4e79]">Paso 3:</span> Copia este enlace para "URIs de redireccionamiento autorizados" y pégalo allí también:
+                            <div class="flex gap-2 mt-1.5">
+                                <input type="text" readonly value="https://acostamanjarresalbertantonio-hue.github.io/familysync_unir_app.html" class="flex-1 bg-slate-100 border border-slate-200 p-2.5 rounded-xl font-mono text-[9px] text-slate-700">
+                                <button onclick="window.copyText('https://acostamanjarresalbertantonio-hue.github.io/familysync_unir_app.html', 'btn-copy-redirect')" id="btn-copy-redirect" class="bg-[#1f4e79] text-white px-3 py-1.5 rounded-xl font-bold text-[10px] active:scale-95 transition">
+                                    <i class="fa-regular fa-copy"></i> Copiar
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="font-bold text-[#1f4e79]">Paso 4:</span> Haz clic en **Guardar** abajo en tu consola de Google y vuelve a cargar tu agenda en el celular. ¡Listo!
+                        </div>
                     </div>
                 </div>
 
@@ -222,7 +246,6 @@
                     </div>
 
                     <div id="gcal-actions-container" class="space-y-3">
-                        <!-- El botón ahora ejecuta onclick nativo directamente, evitando fallos de registro -->
                         <button id="gcal-connect-btn" onclick="window.connectToGoogle()" class="w-full bg-[#1f4e79] hover:bg-[#1a4165] text-white font-bold text-xs py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-sm">
                             <i class="fa-brands fa-google"></i> Conectar con Google Calendar
                         </button>
@@ -403,10 +426,8 @@
         var isGoogleConnected = false;
         var tokenClient = null;
         
-        // ==========================================
-        // ⚠️ REEMPLAZA ESTE CÓDIGO CON TU ID REAL DE GOOGLE:
+        // ID de cliente de Google real de Albert Antonio Acosta Manjarres
         var googleClientId = "987206366323-7orcablju9957uve00ejinlt26baqd3k.apps.googleusercontent.com";
-        // ==========================================
         
         var googleCalendarId = "primary";
         var currentWeekIndex = 0;
@@ -425,7 +446,7 @@
             { id: 4, start: "2026-06-29", end: "2026-06-30", label: "SEMANA 4 (JUN 29 - JUN 30)" }
         ];
 
-        // Registro de Funciones Globales para evitar fallos "undefined"
+        // Registro de Funciones Globales para evitar fallos de inicialización
         window.switchView = switchView;
         window.prevWeek = prevWeek;
         window.nextWeek = nextWeek;
@@ -444,6 +465,7 @@
         window.connectToGoogle = connectToGoogle;
         window.toggleDebugConsole = toggleDebugConsole;
         window.testPopups = testPopups;
+        window.copyText = copyText;
 
         // Consola de Diagnóstico Integrada para celulares
         function logDebug(message, type) {
@@ -469,6 +491,25 @@
             if (consoleEl) {
                 consoleEl.classList.toggle('hidden');
             }
+        }
+
+        // Función segura para copiar texto al portapapeles
+        function copyText(text, btnId) {
+            var tempInput = document.createElement("input");
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            try {
+                document.execCommand("copy");
+                var btn = document.getElementById(btnId);
+                var prevHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-check text-emerald-600"></i> ¡Listo!';
+                setTimeout(function() { btn.innerHTML = prevHtml; }, 2000);
+                showToast("📋 Enlace copiado al portapapeles");
+            } catch (err) {
+                logDebug("Error al copiar texto: " + err.message, "error");
+            }
+            document.body.removeChild(tempInput);
         }
 
         // Probar si el navegador está bloqueando ventanas emergentes
@@ -667,6 +708,11 @@
                         googleToken = resp.access_token;
                         isGoogleConnected = true;
                         
+                        // Guardar permanentemente la conexión para que no se desconecte al reiniciar
+                        localStorage.setItem('familysync_gcal_connected', 'true');
+                        localStorage.setItem('familysync_gcal_type', 'real');
+                        localStorage.setItem('familysync_gcal_token', googleToken);
+
                         document.getElementById('gcal-status-text').innerText = "Conectado";
                         document.getElementById('gcal-status-text').className = "font-bold text-emerald-600";
                         document.getElementById('google-sync-now-btn').classList.remove('hidden');
@@ -695,6 +741,10 @@
                 logDebug("Lanzando simulador de sincronización local...", "warning");
                 showToast("🔮 Iniciando simulador de Sincronización...");
                 setTimeout(function() {
+                    // Guardar permanentemente el estado de simulación para que no pida conectar de nuevo
+                    localStorage.setItem('familysync_gcal_connected', 'true');
+                    localStorage.setItem('familysync_gcal_type', 'simulated');
+
                     document.getElementById('gcal-status-text').innerText = "Conectado (Simulado)";
                     document.getElementById('gcal-status-text').className = "font-bold text-emerald-600 animate-pulse";
                     document.getElementById('google-sync-now-btn').classList.remove('hidden');
@@ -820,6 +870,9 @@
             document.getElementById("view-" + view).classList.remove('hidden');
             document.getElementById("tab-" + view).className = "py-2.5 text-[10px] font-bold rounded-xl transition bg-[#f5eedf] text-slate-955 shadow-sm border border-[#dfd5be]/60";
 
+            // Guardar pestaña actual elegida
+            localStorage.setItem('familysync_active_tab', view);
+
             if (view === 'day') renderEvents();
             else if (view === 'week') renderWeeklyGrid();
             else if (view === 'month') {
@@ -834,6 +887,10 @@
             if (currentWeekIndex > 0) {
                 currentWeekIndex--;
                 selectedDate = weeks[currentWeekIndex].start;
+                
+                localStorage.setItem('familysync_current_week', currentWeekIndex);
+                localStorage.setItem('familysync_selected_date', selectedDate);
+                
                 renderWeekNav();
             }
         }
@@ -842,12 +899,17 @@
             if (currentWeekIndex < weeks.length - 1) {
                 currentWeekIndex++;
                 selectedDate = weeks[currentWeekIndex].start;
+                
+                localStorage.setItem('familysync_current_week', currentWeekIndex);
+                localStorage.setItem('familysync_selected_date', selectedDate);
+                
                 renderWeekNav();
             }
         }
 
         function selectDay(dateStr) {
             selectedDate = dateStr;
+            localStorage.setItem('familysync_selected_date', dateStr);
             renderDaySelector();
             renderEvents();
         }
@@ -1039,8 +1101,13 @@
                 (function(dStr) {
                     cell.onclick = function() {
                         selectedDate = dStr;
+                        localStorage.setItem('familysync_selected_date', dStr);
+                        
                         var foundWeekIdx = weeks.findIndex(function(w) { return dStr >= w.start && dStr <= w.end; });
-                        if (foundWeekIdx !== -1) currentWeekIndex = foundWeekIdx;
+                        if (foundWeekIdx !== -1) {
+                            currentWeekIndex = foundWeekIdx;
+                            localStorage.setItem('familysync_current_week', foundWeekIdx);
+                        }
                         
                         renderWeekNav();
                         renderMonthlyGrid();
@@ -1454,12 +1521,40 @@
         // Función Maestra de Inicialización sin fallos de carrera
         function initApp() {
             logDebug("Iniciando componentes principales...");
+            
+            // 1. Restaurar Día y Semana Guardados
+            selectedDate = localStorage.getItem('familysync_selected_date') || "2026-06-08";
+            currentWeekIndex = parseInt(localStorage.getItem('familysync_current_week')) || 0;
+            var savedTab = localStorage.getItem('familysync_active_tab') || "day";
+
             checkAndInitFirebase();
             initGoogleOAuth();
+            
+            // 2. Restaurar Conexión Permanente de Google
+            var savedConnected = localStorage.getItem('familysync_gcal_connected');
+            var savedType = localStorage.getItem('familysync_gcal_type');
+            if (savedConnected === 'true') {
+                isGoogleConnected = true;
+                if (savedType === 'simulated') {
+                    document.getElementById('gcal-status-text').innerText = "Conectado (Simulado)";
+                    document.getElementById('gcal-status-text').className = "font-bold text-emerald-600 animate-pulse";
+                    document.getElementById('google-sync-now-btn').classList.remove('hidden');
+                } else {
+                    googleToken = localStorage.getItem('familysync_gcal_token');
+                    document.getElementById('gcal-status-text').innerText = "Conectado";
+                    document.getElementById('gcal-status-text').className = "font-bold text-emerald-600";
+                    document.getElementById('google-sync-now-btn').classList.remove('hidden');
+                }
+                logDebug("Restaurada la sesión de Google Calendar guardada.", "success");
+            }
+
             renderWeekNav();
             renderWeeklyGrid();
             renderMonthlyGrid();
             showDayDetailsInMonth(selectedDate);
+            
+            // Restaurar pestaña activa anterior
+            switchView(savedTab);
         }
 
         // Comprobación de estado de carga para compatibilidad móvil del 100%
