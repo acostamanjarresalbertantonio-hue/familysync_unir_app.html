@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FamilySync - Agenda Familiar Premium</title>
-    <!-- Tailwind CSS para diseño fluido y moderno -->
+    <title>FamilySync - Agenda Inteligente Premium</title>
+    <!-- Tailwind CSS para diseño fluido y ultra responsivo -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome para iconos ejecutivos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -24,8 +24,8 @@
         
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #2b231a; /* Madera oscura de fondo ambiental */
-            background-image: radial-gradient(rgba(0, 0, 0, 0.4) 1px, transparent 0);
+            background-color: #1a1510; /* Madera noble súper oscura */
+            background-image: radial-gradient(rgba(235, 220, 185, 0.05) 1px, transparent 0);
             background-size: 24px 24px;
         }
 
@@ -35,7 +35,7 @@
 
         /* Simulación de textura de papel pergamino mate que no daña la vista */
         .paper-texture {
-            background-color: #f5eedf;
+            background-color: #f7f2e8;
             background-image: radial-gradient(#dfd7c2 1.2px, transparent 0);
             background-size: 20px 20px;
         }
@@ -45,6 +45,17 @@
             background: linear-gradient(90deg, #8a8a8a 0%, #dcdcdc 50%, #5e5e5e 100%);
             border-radius: 4px;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.15);
+        }
+
+        /* Animación del micrófono parpadeante */
+        @keyframes mic-pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .mic-active {
+            animation: mic-pulse 1.5s infinite;
+            background-color: #ef4444 !important;
         }
 
         ::-webkit-scrollbar {
@@ -62,7 +73,7 @@
 </head>
 <body class="text-[#2c261e] min-h-screen flex justify-center p-0 sm:p-4">
 
-    <!-- CONTENEDOR DE LA APLICACIÓN ESTILO AGENDA MÓVIL PREMIUM -->
+    <!-- CONTENEDOR DE LA APLICACIÓN HÍBRIDA DE ALTA GAMA -->
     <div class="w-full max-w-md bg-[#f5eedf] min-h-screen sm:min-h-[850px] sm:my-4 flex flex-col shadow-2xl relative border border-[#dfd5be] sm:rounded-3xl overflow-hidden">
         
         <!-- HEADER DE LA APP (Estilo Corporativo de Lujo) -->
@@ -73,28 +84,32 @@
                 </div>
                 <div>
                     <h1 class="text-base font-bold text-[#1f4e79] tracking-wide planner-header">FamilySync</h1>
-                    <p class="text-[9px] text-slate-600 font-bold uppercase tracking-widest">UNIR & Family Edition</p>
+                    <p class="text-[9px] text-slate-600 font-bold uppercase tracking-widest">UNIR & AI Premium</p>
                 </div>
             </div>
             
-            <div class="flex items-center gap-2">
-                <!-- Botón de Sincronización Manual con Google Calendar -->
+            <div class="flex items-center gap-1.5">
+                <!-- Configuración API -->
+                <button onclick="openSettingsModal()" class="bg-[#f5eedf] hover:bg-[#eae3d2] text-slate-700 p-2.5 rounded-xl transition border border-[#dfd5be] shadow-sm" title="Configurar APIs">
+                    <i class="fa-solid fa-sliders text-xs"></i>
+                </button>
+                <!-- Botón de Sincronización Manual -->
                 <button id="google-sync-now-btn" onclick="window.syncWithGoogleCalendar()" class="bg-[#f5eedf] hover:bg-[#eae3d2] text-slate-700 p-2.5 rounded-xl transition border border-[#dfd5be] shadow-sm hidden" title="Sincronizar Google Calendar">
-                    <i class="fa-solid fa-arrows-rotate text-sm"></i>
+                    <i class="fa-solid fa-arrows-rotate text-xs"></i>
                 </button>
                 <!-- Botón de Exportación Premium -->
                 <button onclick="openExportModal()" class="bg-[#f5eedf] hover:bg-[#eae3d2] text-slate-700 p-2.5 rounded-xl transition border border-[#dfd5be] shadow-sm" title="Exportar Agenda">
-                    <i class="fa-solid fa-print text-sm"></i>
+                    <i class="fa-solid fa-print text-xs"></i>
                 </button>
                 <!-- Badge Estado Activo -->
-                <div id="cloud-status-badge" class="flex items-center gap-1.5 bg-blue-100 text-[#1f4e79] px-2.5 py-1.5 rounded-xl text-[9px] font-bold border border-[#9bc2e6] shadow-sm">
-                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
-                    <span id="cloud-status-text">Iniciando...</span>
+                <div id="cloud-status-badge" class="flex items-center gap-1 bg-blue-100 text-[#1f4e79] px-2 py-1.5 rounded-xl text-[9px] font-bold border border-[#9bc2e6] shadow-sm">
+                    <span class="w-1 h-1 rounded-full bg-blue-500 animate-pulse"></span>
+                    <span id="cloud-status-text">Iniciando</span>
                 </div>
             </div>
         </header>
 
-        <!-- SUBHEADER NAVEGACIÓN SEMANAL -->
+        <!-- SUBHEADER NAVEGACIÓN SEMANAL / CONTROL DE VOZ INTEGRADO -->
         <div id="calendar-week-nav" class="bg-[#f5eedf]/95 backdrop-blur-md p-3 border-b border-[#dfd5be] flex justify-between items-center sticky top-[69px] z-20">
             <button onclick="prevWeek()" class="p-2 hover:bg-[#eae3d2] rounded-lg text-slate-500 hover:text-slate-800 transition">
                 <i class="fa-solid fa-chevron-left text-xs"></i>
@@ -105,20 +120,34 @@
             </button>
         </div>
 
-        <!-- PESTAÑAS DE NAVEGACIÓN INTERACTIVA -->
-        <div class="px-4 pt-4 bg-[#f5eedf]">
-            <div class="grid grid-cols-4 bg-[#eae3d2] p-1 rounded-2xl border border-[#dfd5be]/40 text-center">
-                <button onclick="switchView('day')" id="tab-day" class="py-2.5 text-[10px] font-bold rounded-xl transition bg-[#f5eedf] text-slate-900 shadow-sm border border-[#dfd5be]/60">
+        <!-- BARRA INTERACTIVA DE ASISTENTE DE VOZ GEMINI -->
+        <div class="bg-[#ebdcb9]/40 px-4 py-2 border-b border-[#dfd5be]/60 flex items-center justify-between gap-3">
+            <div class="flex-1 min-w-0">
+                <div id="voice-status-text" class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Asistente IA Gemini</div>
+                <div id="voice-transcription-output" class="text-xs text-slate-700 italic truncate">"Presiona el micrófono para hablar..."</div>
+            </div>
+            <button id="btn-voice-mic" onclick="window.toggleVoiceListening()" class="bg-[#1f4e79] hover:bg-[#1a4165] text-white w-9 h-9 rounded-xl flex items-center justify-center shadow-md transition-all active:scale-95 shrink-0" title="Activar dictado por voz">
+                <i id="mic-icon" class="fa-solid fa-microphone text-sm"></i>
+            </button>
+        </div>
+
+        <!-- PESTAÑAS DE NAVEGACIÓN INTERACTIVA (5 COLUMNAS DE ALTA PRECISIÓN) -->
+        <div class="px-4 pt-3 bg-[#f5eedf]">
+            <div class="grid grid-cols-5 bg-[#eae3d2] p-1 rounded-2xl border border-[#dfd5be]/40 text-center gap-0.5">
+                <button onclick="switchView('day')" id="tab-day" class="py-2.5 text-[9px] font-bold rounded-xl transition bg-[#f5eedf] text-slate-900 shadow-sm border border-[#dfd5be]/60">
                     DÍA
                 </button>
-                <button onclick="switchView('week')" id="tab-week" class="py-2.5 text-[10px] font-bold rounded-xl transition text-slate-600 hover:text-slate-900">
-                    SEMANA
+                <button onclick="switchView('week')" id="tab-week" class="py-2.5 text-[9px] font-bold rounded-xl transition text-slate-600 hover:text-slate-900">
+                    SEM
                 </button>
-                <button onclick="switchView('month')" id="tab-month" class="py-2.5 text-[10px] font-bold rounded-xl transition text-slate-600 hover:text-slate-950">
+                <button onclick="switchView('month')" id="tab-month" class="py-2.5 text-[9px] font-bold rounded-xl transition text-slate-600 hover:text-slate-950">
                     MES
                 </button>
-                <button onclick="switchView('stats')" id="tab-stats" class="py-2.5 text-[10px] font-bold rounded-xl transition text-slate-600 hover:text-slate-955">
-                    CONEXIÓN
+                <button onclick="switchView('google')" id="tab-google" class="py-2.5 text-[9px] font-bold rounded-xl transition text-slate-600 hover:text-slate-950">
+                    LIVE
+                </button>
+                <button onclick="switchView('stats')" id="tab-stats" class="py-2.5 text-[9px] font-bold rounded-xl transition text-slate-600 hover:text-slate-955">
+                    CONEX
                 </button>
             </div>
         </div>
@@ -164,8 +193,21 @@
                 </div>
             </div>
 
-            <!-- 3. VISTA MENSUAL -->
+            <!-- 3. VISTA MENSUAL (INCLUYE MINI CALENDARIO CHRONOS) -->
             <div id="view-month" class="hidden space-y-4">
+                <!-- Mini Calendario de Navegación Lateral/Superior -->
+                <div class="bg-white/90 p-4 rounded-2xl border border-[#dfd5be] shadow-sm space-y-3">
+                    <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+                        <h4 class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"><i class="fa-solid fa-calendar-week mr-1.5 text-[#1f4e79]"></i>Navegación Rápida</h4>
+                        <span id="mini-cal-month" class="text-xs font-bold text-[#1f4e79]">Junio 2026</span>
+                    </div>
+                    <div class="grid grid-cols-7 gap-1 text-center text-[9px] font-bold text-slate-400">
+                        <span>D</span><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span>
+                    </div>
+                    <div id="mini-cal-grid" class="grid grid-cols-7 gap-1 text-center text-xs"></div>
+                </div>
+
+                <!-- Grid Mensual Completo -->
                 <div class="bg-white/90 p-4 rounded-2xl border border-[#dfd5be] shadow-sm space-y-4">
                     <div class="flex justify-between items-center border-b border-slate-200 pb-3">
                         <h3 class="text-xs font-bold tracking-wider text-slate-700 uppercase planner-header"><i class="fa-solid fa-calendar-days text-[#1f4e79] mr-2"></i>Vista de Mes Completo</h3>
@@ -195,23 +237,44 @@
                 </div>
             </div>
 
+            <!-- 3B. VISTA CALENDARIO DE GOOGLE EN VIVO (CONSOLIDADO DE KATERINE & ALBERT) -->
+            <div id="view-google" class="hidden space-y-4">
+                <div class="bg-white/90 p-4 rounded-2xl border border-[#dfd5be] shadow-sm space-y-3">
+                    <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+                        <div>
+                            <h3 class="text-xs font-bold tracking-wider text-slate-700 uppercase planner-header"><i class="fa-solid fa-calendar-days text-blue-600 mr-2"></i>Calendario Real Katerine</h3>
+                            <p class="text-[9px] text-slate-400">6 Calendarios unificados en tiempo real</p>
+                        </div>
+                        <button onclick="window.toggleGoogleFullscreen()" id="btn-gcal-expand" class="bg-[#1f4e79] hover:bg-[#1a4165] text-white text-[10px] font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition active:scale-95 shadow-sm">
+                            <i class="fa-solid fa-expand"></i> Pantalla Completa
+                        </button>
+                    </div>
+                    
+                    <!-- Contenedor del Iframe con soporte para Pantalla Completa y salida rápida -->
+                    <div id="gcal-iframe-container" class="w-full h-[500px] rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100 transition-all duration-300 relative">
+                        <button id="btn-gcal-close-fs" onclick="window.toggleGoogleFullscreen()" class="hidden absolute top-4 right-4 z-50 bg-rose-600 hover:bg-rose-700 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg active:scale-95 transition">
+                            <i class="fa-solid fa-xmark text-lg"></i>
+                        </button>
+                        <iframe id="gcal-embed-iframe" src="" style="border: 0" class="w-full h-full" frameborder="0" scrolling="yes"></iframe>
+                    </div>
+                    <p class="text-[9px] text-center text-slate-400 italic">Desliza con dos dedos para navegar por el mapa del calendario en móviles.</p>
+                </div>
+            </div>
+
             <!-- 4. PESTAÑA DE CONEXIÓN Y DIAGNÓSTICO -->
             <div id="view-stats" class="hidden space-y-4">
                 
-                <!-- GUÍA INTERACTIVA DE CORRECCIÓN GOOGLE CLOUD (REEMPLAZA ALERTA SIMPLE) -->
+                <!-- GUÍA INTERACTIVA DE CORRECCIÓN GOOGLE CLOUD -->
                 <div class="bg-amber-50 border border-amber-300 rounded-3xl p-5 space-y-3 text-xs text-amber-900 shadow-sm">
                     <div class="flex items-center gap-2 font-bold text-[#1f4e79]">
                         <i class="fa-solid fa-circle-info text-amber-600 text-base"></i>
-                        <span class="text-xs uppercase tracking-wider">💡 Guía para solucionar tu error de Google Cloud</span>
+                        <span class="text-xs uppercase tracking-wider">💡 Enlace Correcto de Google Cloud</span>
                     </div>
-                    <p class="leading-relaxed">Hemos detectado el error de tu captura en tu consola de Google. Para que la conexión de Google Calendar sea **REAL y no simulada**, sigue estos rápidos pasos en tu panel de Google Cloud:</p>
+                    <p class="leading-relaxed">Asegúrate de configurar los siguientes URIs exactamente en tu panel de Google Cloud:</p>
                     
                     <div class="space-y-3.5 bg-white/70 p-4 rounded-2xl border border-amber-200">
                         <div>
-                            <span class="font-bold text-[#1f4e79]">Paso 1:</span> En tu consola, ve a "Orígenes de JavaScript autorizados" y borra el enlace largo que tiene el error de barra inclinada.
-                        </div>
-                        <div>
-                            <span class="font-bold text-[#1f4e79]">Paso 2:</span> Copia este origen exacto con el botón de abajo y pégalo allí:
+                            <span class="font-bold text-[#1f4e79]">Orígenes de JavaScript autorizados:</span>
                             <div class="flex gap-2 mt-1.5">
                                 <input type="text" readonly value="https://acostamanjarresalbertantonio-hue.github.io" class="flex-1 bg-slate-100 border border-slate-200 p-2.5 rounded-xl font-mono text-[9px] text-slate-700">
                                 <button onclick="window.copyText('https://acostamanjarresalbertantonio-hue.github.io', 'btn-copy-origin')" id="btn-copy-origin" class="bg-[#1f4e79] text-white px-3 py-1.5 rounded-xl font-bold text-[10px] active:scale-95 transition">
@@ -220,7 +283,7 @@
                             </div>
                         </div>
                         <div>
-                            <span class="font-bold text-[#1f4e79]">Paso 3:</span> Copia este enlace para "URIs de redireccionamiento autorizados" y pégalo allí también:
+                            <span class="font-bold text-[#1f4e79]">URIs de redireccionamiento autorizados:</span>
                             <div class="flex gap-2 mt-1.5">
                                 <input type="text" readonly value="https://acostamanjarresalbertantonio-hue.github.io/familysync_unir_app.html" class="flex-1 bg-slate-100 border border-slate-200 p-2.5 rounded-xl font-mono text-[9px] text-slate-700">
                                 <button onclick="window.copyText('https://acostamanjarresalbertantonio-hue.github.io/familysync_unir_app.html', 'btn-copy-redirect')" id="btn-copy-redirect" class="bg-[#1f4e79] text-white px-3 py-1.5 rounded-xl font-bold text-[10px] active:scale-95 transition">
@@ -228,15 +291,11 @@
                                 </button>
                             </div>
                         </div>
-                        <div>
-                            <span class="font-bold text-[#1f4e79]">Paso 4:</span> Haz clic en **Guardar** abajo en tu consola de Google y vuelve a cargar tu agenda en el celular. ¡Listo!
-                        </div>
                     </div>
                 </div>
 
                 <div class="bg-white/90 p-5 rounded-2xl border border-[#dfd5be] shadow-sm space-y-4">
                     <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider planner-header"><i class="fa-brands fa-google text-blue-600 mr-2"></i>Sincronización de Google</h3>
-                    <p class="text-xs text-slate-500 leading-relaxed font-medium">Inicia sesión con tu cuenta de Google para sincronizar tus clases de la UNIR y las terapias directamente en tu calendario oficial.</p>
                     
                     <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs space-y-2.5">
                         <div class="flex justify-between items-center">
@@ -339,7 +398,36 @@
             </div>
         </div>
 
-        <!-- MODAL: EXPORTADOR PREMIUM (IMAGEN DE AGENDA FISICA) -->
+        <!-- MODAL DE CONFIGURACIÓN DE APIS (CHRONOS STYLE) -->
+        <div id="settings-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md">
+            <div class="bg-[#fbfbf9] border border-slate-200 w-full max-w-sm rounded-3xl shadow-2xl p-6 space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+                    <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider planner-header"><i class="fa-solid fa-gears text-[#1f4e79] mr-2"></i>Configuración de APIs</h3>
+                    <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-800"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+                <p class="text-[10px] text-slate-500 leading-relaxed">Guarda tus llaves de forma segura en tu navegador local. Se usarán de forma preferente para todas tus integraciones.</p>
+                <form id="settings-form" onsubmit="saveSettings(event)" class="space-y-3.5 text-xs">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Google Client ID</label>
+                        <input type="text" id="cfg-client-id" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-800 font-mono text-[10px]">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Gemini API Key (Para asistente de voz)</label>
+                        <input type="password" id="cfg-gemini-key" placeholder="AIzaSy..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-800 font-mono text-[10px]">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Enlace de Google Calendar Integrado (Embed Iframe)</label>
+                        <textarea id="cfg-embed-url" rows="4" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-800 font-mono text-[9px] focus:outline-none focus:border-[#1f4e79]" placeholder="Pegar el src del iframe aquí..."></textarea>
+                    </div>
+                    <div class="flex gap-2 pt-2">
+                        <button type="button" onclick="clearSettings()" class="bg-red-50 text-red-600 font-bold py-2.5 px-4 rounded-xl text-[10px]">Restaurar</button>
+                        <button type="submit" class="flex-1 bg-[#1f4e79] text-white font-bold py-2.5 rounded-xl shadow-md text-[10px]">Guardar Configuración</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- MODAL: EXPORTADOR PREMIUM -->
         <div id="export-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md">
             <div class="bg-[#fbfbf9] border border-slate-200 w-full max-w-sm rounded-3xl shadow-2xl p-6 space-y-4">
                 <div class="flex justify-between items-center border-b border-slate-200 pb-3">
@@ -360,7 +448,6 @@
 
                     <!-- MOCKUP OCULTO DE EXPORTACIÓN -->
                     <div id="capture-container" class="hidden w-[950px] bg-[#221c16] p-12 shadow-2xl relative" style="font-family: 'Plus Jakarta Sans', sans-serif;">
-                        <!-- Espirales de Agenda Superior -->
                         <div class="absolute top-[32px] left-[10%] right-[10%] flex justify-between px-8 z-30 pointer-events-none">
                             <span class="w-4 h-10 spiral-ring"></span>
                             <span class="w-4 h-10 spiral-ring"></span>
@@ -373,7 +460,6 @@
                             <span class="w-4 h-10 spiral-ring"></span>
                         </div>
 
-                        <!-- Hoja de Papel Marfil Realista -->
                         <div class="bg-[#faf5e8] rounded-3xl p-10 border border-[#dfd5be] shadow-inner relative overflow-hidden pt-12" style="background-image: radial-gradient(#dfd7c2 1.2px, transparent 0); background-size: 28px 28px;">
                             <div class="flex justify-between items-end border-b-2 border-[#1f4e79] pb-6 mb-6">
                                 <div>
@@ -385,24 +471,12 @@
                                 </div>
                             </div>
                             <div id="capture-render-area" class="space-y-4"></div>
-                            <div class="mt-8 pt-6 border-t border-slate-200 flex justify-between items-center text-[10px] text-slate-500 font-semibold">
-                                <div class="flex gap-4">
-                                    <span>🟢 Casa / Logística</span>
-                                    <span>🔵 Estudio Académico</span>
-                                    <span>🔴 Terapias / Trabajo</span>
-                                </div>
-                                <span>FamilySync Agenda • Albert & Katerine</span>
-                            </div>
                         </div>
                     </div>
 
-                    <!-- Botones de Acción -->
                     <div class="space-y-2 pt-2">
                         <button onclick="generateImage()" class="w-full bg-[#1f4e79] hover:bg-[#1a4165] text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-md">
                             <i class="fa-solid fa-image"></i> Descargar Imagen PNG Premium
-                        </button>
-                        <button onclick="window.print()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-file-pdf"></i> Guardar como PDF / Imprimir
                         </button>
                     </div>
                 </div>
@@ -413,7 +487,7 @@
         <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-full max-w-xs"></div>
     </div>
 
-    <!-- CÓDIGO LOGÍSTICO Y CONEXIÓN CON GOOGLE CALENDAR -->
+    <!-- CÓDIGO LOGÍSTICO COMPLETO Y ASISTENTE DE VOZ GEMINI -->
     <script>
         // Variables de Estado de la Aplicación
         var events = [];
@@ -426,8 +500,13 @@
         var isGoogleConnected = false;
         var tokenClient = null;
         
-        // ID de cliente de Google real de Albert Antonio Acosta Manjarres
-        var googleClientId = "987206366323-7orcablju9957uve00ejinlt26baqd3k.apps.googleusercontent.com";
+        // ID de cliente de Google real de Albert Antonio Acosta Manjarres (Preferido si no hay en localStorage)
+        var googleClientId = localStorage.getItem('cfg_google_client_id') || "987206366323-7orcablju9957uve00ejinlt26baqd3k.apps.googleusercontent.com";
+        var geminiApiKey = localStorage.getItem('cfg_gemini_api_key') || "";
+        
+        // Enlace por defecto del iframe de Google Calendar proporcionado por Albert
+        var defaultGoogleEmbedUrl = "https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=America%2FBogota&title=Calendario%20Katerine&src=YWNvc3RhbWFuamFycmVzLmFsYmVydGFudG9uaW9AZ21haWwuY29t&src=NTlhOTZmZjgzZDIwYTIyYWQ5OGUxMDI0Y2UxZjY4MDIxMTI1NzhiNjAxMmUwNjYyYzVlMzZlMWJkYmFmYzQzNUBncm91cC5jYWxlbmRhci5nb29nbGUuY29t&src=NjMwZGY1MzEzNWVmNGZhOTc4ZTJhOTA1OWIzMjQxYTEzZWI3MGVlYTYyMTJiNzY4NjBjMzA5MTM0ZTMxY2UxZUBncm91cC5jYWxlbmRhci5nb29nbGUuY29t&src=N2QzYzFjMmRhN2ZjYWI5OTExMTk5MmRmNGUwNGM2NWJjYTFhZjJlZTczZjAyMWU1M2NmZmVmNzgxYzQxNzFkY0Bncm91cC5jYWxlbmRhci5nb29nbGUuY29t&src=Mm1oajVyajIzdDY2cWM1dGU1aWw5MWl0aXEydnRhdmpAaW1wb3J0LmNhbGVuZGFyLmdvb2dsZS5jb20&src=ZXMuY28jaG9saWRheUBncm91cC52LmNhbGVuZGFyLmdvb2dsZS5jb20&color=%237986cb&color=%2333b679&color=%23039be5&color=%23be0982&color=%23e4c441&color=%23009688";
+        var googleEmbedUrl = localStorage.getItem('cfg_google_embed_url') || defaultGoogleEmbedUrl;
         
         var googleCalendarId = "primary";
         var currentWeekIndex = 0;
@@ -446,7 +525,7 @@
             { id: 4, start: "2026-06-29", end: "2026-06-30", label: "SEMANA 4 (JUN 29 - JUN 30)" }
         ];
 
-        // Registro de Funciones Globales para evitar fallos de inicialización
+        // Registro de Funciones Globales
         window.switchView = switchView;
         window.prevWeek = prevWeek;
         window.nextWeek = nextWeek;
@@ -466,8 +545,14 @@
         window.toggleDebugConsole = toggleDebugConsole;
         window.testPopups = testPopups;
         window.copyText = copyText;
+        window.openSettingsModal = openSettingsModal;
+        window.closeSettingsModal = closeSettingsModal;
+        window.saveSettings = saveSettings;
+        window.clearSettings = clearSettings;
+        window.toggleVoiceListening = toggleVoiceListening;
+        window.toggleGoogleFullscreen = toggleGoogleFullscreen;
 
-        // Consola de Diagnóstico Integrada para celulares
+        // Consola de Diagnóstico Integrada
         function logDebug(message, type) {
             type = type || "info";
             var consoleEl = document.getElementById('debug-console');
@@ -488,12 +573,9 @@
 
         function toggleDebugConsole() {
             var consoleEl = document.getElementById('debug-console');
-            if (consoleEl) {
-                consoleEl.classList.toggle('hidden');
-            }
+            if (consoleEl) consoleEl.classList.toggle('hidden');
         }
 
-        // Función segura para copiar texto al portapapeles
         function copyText(text, btnId) {
             var tempInput = document.createElement("input");
             tempInput.value = text;
@@ -507,9 +589,283 @@
                 setTimeout(function() { btn.innerHTML = prevHtml; }, 2000);
                 showToast("📋 Enlace copiado al portapapeles");
             } catch (err) {
-                logDebug("Error al copiar texto: " + err.message, "error");
+                logDebug("Error al copiar: " + err.message, "error");
             }
             document.body.removeChild(tempInput);
+        }
+
+        // CONTROL DE VOZ INTELIGENTE CON GEMINI 2.5 FLASH
+        var recognition = null;
+        var isListening = false;
+
+        function initSpeechRecognition() {
+            var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                logDebug("El navegador móvil no es compatible con el reconocimiento de voz nativo.", "warning");
+                return;
+            }
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = 'es-ES';
+            recognition.interimResults = false;
+
+            recognition.onstart = function() {
+                isListening = true;
+                document.getElementById('btn-voice-mic').classList.add('mic-active');
+                document.getElementById('mic-icon').className = "fa-solid fa-microphone-lines text-white animate-pulse";
+                document.getElementById('voice-status-text').innerText = "Escuchando activamente...";
+                document.getElementById('voice-transcription-output').innerText = "Habla ahora de forma natural...";
+                logDebug("Micrófono abierto. Esperando comando de voz...");
+            };
+
+            recognition.onresult = function(event) {
+                var transcript = event.results[0][0].transcript;
+                document.getElementById('voice-transcription-output').innerText = `"${transcript}"`;
+                logDebug(`Voz capturada: "${transcript}"`);
+                parseVoiceWithGemini(transcript);
+            };
+
+            recognition.onerror = function(event) {
+                logDebug("Error de voz: " + event.error, "error");
+                stopVoiceListening();
+            };
+
+            recognition.onend = function() {
+                stopVoiceListening();
+            };
+        }
+
+        function toggleVoiceListening() {
+            if (!recognition) initSpeechRecognition();
+            if (!recognition) {
+                showToast("🎙️ Reconocimiento de voz no soportado en este dispositivo");
+                return;
+            }
+            if (isListening) {
+                recognition.stop();
+            } else {
+                try {
+                    recognition.start();
+                } catch (e) {
+                    logDebug("Error iniciando micrófono: " + e.message, "error");
+                }
+            }
+        }
+
+        function stopVoiceListening() {
+            isListening = false;
+            document.getElementById('btn-voice-mic').classList.remove('mic-active');
+            document.getElementById('mic-icon').className = "fa-solid fa-microphone text-white";
+            document.getElementById('voice-status-text').innerText = "Asistente IA Gemini";
+        }
+
+        // Llamar a Gemini API de forma segura con reintentos y exponencial backoff
+        async function callGeminiAPI(prompt, systemInstruction) {
+            const apiKeyToUse = geminiApiKey || ""; // Usa clave de settings o fallback vacío
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKeyToUse}`;
+            
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: { parts: [{ text: systemInstruction }] },
+                generationConfig: {
+                    responseMimeType: "application/json"
+                }
+            };
+
+            let delay = 1000;
+            for (let i = 0; i < 5; i++) {
+                try {
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (response.ok) {
+                        const result = await response.json();
+                        return result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    }
+                } catch (error) {
+                    // Backoff exponencial silencioso
+                }
+                await new Promise(resolve => setTimeout(resolve, delay));
+                delay *= 2;
+            }
+            throw new Error("No se pudo conectar con el motor de Inteligencia Artificial Gemini.");
+        }
+
+        async function parseVoiceWithGemini(transcript) {
+            document.getElementById('voice-status-text').innerText = "Gemini pensando...";
+            showToast("🧠 Gemini está interpretando tu comando...");
+            
+            const systemInstruction = `
+            Eres un analizador estructurado de voz para FamilySync Calendar.
+            Hoy es Domingo, 7 de Junio de 2026.
+            Debes extraer los datos del comando del usuario y devolver UNICAMENTE un objeto JSON con la estructura exacta:
+            {
+              "title": "Nombre legible de la actividad",
+              "type": "ESTUDIO" | "TRABAJO" | "CASA" | "DISPONIBLE",
+              "date": "YYYY-MM-DD" (asume el año 2026, lunes es 2026-06-08, etc),
+              "start": "HH:MM" (formato de 24 horas),
+              "duration": 60 (duración estimada en minutos, por defecto 60)
+            }
+            Si no comprendes el evento, responde con un JSON que tenga title: "Evento de voz sin clasificar".
+            `;
+
+            try {
+                const aiResult = await callGeminiAPI(transcript, systemInstruction);
+                const parsedEvent = JSON.parse(aiResult);
+                
+                logDebug("Gemini parseó con éxito: " + JSON.stringify(parsedEvent), "success");
+                showToast("✨ Actividad interpretada correctamente");
+
+                // Abrir el modal de creación pre-rellenado con lo que Gemini entendió
+                editingEventId = null;
+                document.getElementById('modal-title').innerText = "Confirmar Actividad IA";
+                document.getElementById('event-title').value = parsedEvent.title;
+                document.getElementById('event-type').value = parsedEvent.type;
+                document.getElementById('event-date').value = parsedEvent.date;
+                document.getElementById('event-start').value = parsedEvent.start;
+                document.getElementById('event-duration').value = parsedEvent.duration;
+                document.getElementById('modal-delete-btn').classList.add('hidden');
+                document.getElementById('add-event-modal').classList.remove('hidden');
+
+            } catch (err) {
+                logDebug("Gemini no pudo procesar la solicitud: " + err.message, "error");
+                showToast("❌ No se pudo conectar a Gemini. Guarda manualmente.");
+            } finally {
+                document.getElementById('voice-status-text').innerText = "Asistente IA Gemini";
+            }
+        }
+
+        // SISTEMA DE MODAL DE CONFIGURACIÓN DE APIS (CHRONOS STYLE)
+        function openSettingsModal() {
+            document.getElementById('cfg-client-id').value = googleClientId;
+            document.getElementById('cfg-gemini-key').value = geminiApiKey;
+            document.getElementById('cfg-embed-url').value = googleEmbedUrl;
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        function saveSettings(e) {
+            e.preventDefault();
+            googleClientId = document.getElementById('cfg-client-id').value.trim();
+            geminiApiKey = document.getElementById('cfg-gemini-key').value.trim();
+            googleEmbedUrl = document.getElementById('cfg-embed-url').value.trim() || defaultGoogleEmbedUrl;
+            
+            localStorage.setItem('cfg_google_client_id', googleClientId);
+            localStorage.setItem('cfg_gemini_api_key', geminiApiKey);
+            localStorage.setItem('cfg_google_embed_url', googleEmbedUrl);
+            
+            // Actualizar la fuente del Iframe vivo inmediatamente
+            var iframeEl = document.getElementById('gcal-embed-iframe');
+            if (iframeEl) {
+                iframeEl.src = googleEmbedUrl;
+            }
+
+            showToast("💾 Configuración de claves guardada");
+            closeSettingsModal();
+            
+            // Reiniciar cliente de Google OAuth si las credenciales cambiaron
+            initGoogleOAuth();
+        }
+
+        function clearSettings() {
+            localStorage.removeItem('cfg_google_client_id');
+            localStorage.removeItem('cfg_gemini_api_key');
+            localStorage.removeItem('cfg_google_embed_url');
+            
+            googleClientId = "987206366323-7orcablju9957uve00ejinlt26baqd3k.apps.googleusercontent.com";
+            geminiApiKey = "";
+            googleEmbedUrl = defaultGoogleEmbedUrl;
+            
+            document.getElementById('cfg-client-id').value = googleClientId;
+            document.getElementById('cfg-gemini-key').value = "";
+            document.getElementById('cfg-embed-url').value = googleEmbedUrl;
+            
+            var iframeEl = document.getElementById('gcal-embed-iframe');
+            if (iframeEl) {
+                iframeEl.src = googleEmbedUrl;
+            }
+
+            showToast("🗑️ Configuración restaurada");
+        }
+
+        // CONTROL DE PANTALLA COMPLETA INTELIGENTE PARA EL CALENDARIO EMBEBIDO
+        function toggleGoogleFullscreen() {
+            var container = document.getElementById('gcal-iframe-container');
+            var btnExpand = document.getElementById('btn-gcal-expand');
+            var btnCloseFs = document.getElementById('btn-gcal-close-fs');
+            
+            if (!container) return;
+
+            if (container.classList.contains('fixed')) {
+                // Salir de pantalla completa
+                container.classList.remove('fixed', 'inset-0', 'z-[100]', 'h-screen', 'w-screen', 'p-4', 'bg-slate-900/95');
+                container.classList.add('w-full', 'h-[500px]', 'rounded-2xl');
+                btnCloseFs.classList.add('hidden');
+                btnExpand.innerHTML = '<i class="fa-solid fa-expand"></i> Pantalla Completa';
+                document.body.style.overflow = '';
+                logDebug("Saliendo del modo pantalla completa.");
+            } else {
+                // Entrar a pantalla completa con controles flotantes
+                container.classList.add('fixed', 'inset-0', 'z-[100]', 'h-screen', 'w-screen', 'p-4', 'bg-slate-900/95');
+                container.classList.remove('w-full', 'h-[500px]', 'rounded-2xl');
+                btnCloseFs.classList.remove('hidden');
+                btnExpand.innerHTML = '<i class="fa-solid fa-compress"></i> Restaurar';
+                document.body.style.overflow = 'hidden';
+                logDebug("Visualización en pantalla completa activada.", "success");
+            }
+        }
+
+        // MINI CALENDARIO INTERACTIVO (CHRONOS STYLE)
+        function renderMiniCalendar() {
+            var grid = document.getElementById('mini-cal-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            // Generar los 30 días de Junio 2026 (Comienza un lunes)
+            var numDays = 30;
+            for (var i = 1; i <= numDays; i++) {
+                var dayStr = String(i).padStart(2, '0');
+                var dateStr = "2026-06-" + dayStr;
+                
+                var isSelected = dateStr === selectedDate;
+                var hasEvents = events.some(function(e) { return e.date === dateStr; });
+
+                var cell = document.createElement('button');
+                cell.className = "py-1 rounded-lg text-[10px] font-bold transition flex flex-col items-center justify-center relative " + 
+                    (isSelected ? 'bg-[#1f4e79] text-white' : 'hover:bg-slate-200 text-slate-700 bg-white/40');
+                
+                cell.innerText = i;
+                
+                if (hasEvents && !isSelected) {
+                    var dot = document.createElement('span');
+                    dot.className = "w-1 h-1 bg-[#1f4e79] rounded-full absolute bottom-0.5";
+                    cell.appendChild(dot);
+                }
+
+                (function(dStr) {
+                    cell.onclick = function() {
+                        selectedDate = dStr;
+                        localStorage.setItem('familysync_selected_date', dStr);
+                        
+                        var foundWeekIdx = weeks.findIndex(function(w) { return dStr >= w.start && dStr <= w.end; });
+                        if (foundWeekIdx !== -1) {
+                            currentWeekIndex = foundWeekIdx;
+                            localStorage.setItem('familysync_current_week', foundWeekIdx);
+                        }
+                        renderWeekNav();
+                        renderMiniCalendar();
+                        renderMonthlyGrid();
+                        showDayDetailsInMonth(dStr);
+                    };
+                })(dateStr);
+
+                grid.appendChild(cell);
+            }
         }
 
         // Probar si el navegador está bloqueando ventanas emergentes
@@ -607,7 +963,7 @@
             refreshAllViews();
         }
 
-        // Inicialización Segura y Dinámica de Firebase (Estilo Tradicional Compat)
+        // Inicialización Segura y Dinámica de Firebase
         function checkAndInitFirebase() {
             try {
                 var configString = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
@@ -672,13 +1028,10 @@
             var isDefault = googleClientId === "894231804791-familyunir.apps.googleusercontent.com";
             var isEmpty = !googleClientId || googleClientId.trim() === "" || googleClientId.includes("PEGA_AQUÍ");
             
-            var warningEl = document.getElementById('gcal-id-warning');
-            if (isDefault || isEmpty) {
-                if (warningEl) warningEl.classList.remove('hidden');
-                logDebug("⚠️ Alerta: Estás utilizando la clave de prueba genérica. Para conexión real, reemplázala con tu ID de Google Cloud.", "warning");
+            if (isEmpty) {
+                logDebug("⚠️ Alerta: Estás utilizando la clave de prueba vacía.", "warning");
             } else {
-                if (warningEl) warningEl.classList.add('hidden');
-                logDebug("👉 ID de cliente personalizado detectado: " + googleClientId.substring(0, 15) + "...", "success");
+                logDebug("👉 ID de cliente detectado: " + googleClientId.substring(0, 15) + "...", "success");
             }
         }
 
@@ -708,7 +1061,7 @@
                         googleToken = resp.access_token;
                         isGoogleConnected = true;
                         
-                        // Guardar permanentemente la conexión para que no se desconecte al reiniciar
+                        // Guardar permanentemente la conexión
                         localStorage.setItem('familysync_gcal_connected', 'true');
                         localStorage.setItem('familysync_gcal_type', 'real');
                         localStorage.setItem('familysync_gcal_token', googleToken);
@@ -733,7 +1086,6 @@
         }
 
         function connectToGoogle() {
-            // Abrir la consola automáticamente para diagnóstico inmediato
             document.getElementById('debug-console').classList.remove('hidden');
             logDebug("Presionaste: Conectar con Google Calendar.");
 
@@ -741,7 +1093,6 @@
                 logDebug("Lanzando simulador de sincronización local...", "warning");
                 showToast("🔮 Iniciando simulador de Sincronización...");
                 setTimeout(function() {
-                    // Guardar permanentemente el estado de simulación para que no pida conectar de nuevo
                     localStorage.setItem('familysync_gcal_connected', 'true');
                     localStorage.setItem('familysync_gcal_type', 'simulated');
 
@@ -760,7 +1111,7 @@
                 showToast("👉 Selecciona tu correo en la ventana de Google.");
                 tokenClient.requestAccessToken({ prompt: 'consent' });
             } catch (err) {
-                logDebug("Error lanzando ventana: " + err.message, "error");
+                logDebug("Error launching sign-in window: " + err.message, "error");
                 showToast("❌ No se pudo abrir la ventana de Google.");
             }
         }
@@ -815,7 +1166,7 @@
                             saveLocalEvents(events);
                             refreshAllViews();
                         }
-                        logDebug("Sincronización completa. Se integraron " + addedCount + " eventos nuevos.", "success");
+                        logDebug("Sincronización completa. Se integraron " + addedCount + " eventos.", "success");
                         showToast("✅ Calendario sincronizado.");
                     } else {
                         logDebug("Google Calendar no retornó eventos nuevos.", "info");
@@ -861,28 +1212,35 @@
             document.getElementById('view-day').classList.add('hidden');
             document.getElementById('view-week').classList.add('hidden');
             document.getElementById('view-month').classList.add('hidden');
+            document.getElementById('view-google').classList.add('hidden');
             document.getElementById('view-stats').classList.add('hidden');
 
-            ['day', 'week', 'month', 'stats'].forEach(function(t) {
+            ['day', 'week', 'month', 'google', 'stats'].forEach(function(t) {
                 document.getElementById("tab-" + t).className = "py-2.5 text-[10px] font-bold rounded-xl transition text-slate-500 hover:text-slate-955";
             });
 
             document.getElementById("view-" + view).classList.remove('hidden');
             document.getElementById("tab-" + view).className = "py-2.5 text-[10px] font-bold rounded-xl transition bg-[#f5eedf] text-slate-955 shadow-sm border border-[#dfd5be]/60";
 
-            // Guardar pestaña actual elegida
             localStorage.setItem('familysync_active_tab', view);
 
             if (view === 'day') renderEvents();
             else if (view === 'week') renderWeeklyGrid();
             else if (view === 'month') {
+                renderMiniCalendar();
                 renderMonthlyGrid();
                 showDayDetailsInMonth(selectedDate);
+            }
+            else if (view === 'google') {
+                // Aseguramos que el iframe cargue su URL correcta
+                var iframe = document.getElementById('gcal-embed-iframe');
+                if (iframe && !iframe.src) {
+                    iframe.src = googleEmbedUrl;
+                }
             }
             else if (view === 'stats') calculateStatistics();
         }
 
-        // Navegación semanal básica
         function prevWeek() {
             if (currentWeekIndex > 0) {
                 currentWeekIndex--;
@@ -1111,6 +1469,7 @@
                         
                         renderWeekNav();
                         renderMonthlyGrid();
+                        renderMiniCalendar();
                         showDayDetailsInMonth(dStr);
                     };
                 })(dateStr);
@@ -1375,7 +1734,6 @@
             document.getElementById('add-event-modal').classList.remove('hidden');
         }
 
-        // Modales de interacción
         function openAddEventModal() {
             editingEventId = null;
             document.getElementById('modal-title').innerText = "Nueva Actividad";
@@ -1448,6 +1806,7 @@
                 }
                 saveLocalEvents(events);
                 refreshAllViews();
+                renderMiniCalendar();
             }
             
             closeAddEventModal();
@@ -1465,9 +1824,11 @@
                 saveLocalEvents(events);
                 showToast("🗑️ Eliminado localmente");
                 refreshAllViews();
+                renderMiniCalendar();
             }
         }
 
+        // Eliminar evento seleccionado
         function deleteCurrentEvent() {
             if (editingEventId) {
                 deleteEvent(editingEventId);
@@ -1503,7 +1864,7 @@
             return String(endHrs).padStart(2, '0') + ":" + String(endMins).padStart(2, '0');
         }
 
-        // Sistema unificado de Toasts/Avisos flotantes
+        // Sistema de Toasts/Avisos flotantes
         function showToast(message) {
             var container = document.getElementById('toast-container');
             if (!container) return;
@@ -1518,19 +1879,26 @@
             }, 3000);
         }
 
-        // Función Maestra de Inicialización sin fallos de carrera
+        // Función Maestra de Inicialización
         function initApp() {
-            logDebug("Iniciando componentes principales...");
+            logDebug("Iniciando componentes de FamilySync Premium...");
             
-            // 1. Restaurar Día y Semana Guardados
+            // Restaurar estados persistentes del LocalStorage
             selectedDate = localStorage.getItem('familysync_selected_date') || "2026-06-08";
             currentWeekIndex = parseInt(localStorage.getItem('familysync_current_week')) || 0;
             var savedTab = localStorage.getItem('familysync_active_tab') || "day";
 
             checkAndInitFirebase();
             initGoogleOAuth();
+            initSpeechRecognition();
             
-            // 2. Restaurar Conexión Permanente de Google
+            // Vincular la URL de Google Calendar Embebido
+            var iframeEl = document.getElementById('gcal-embed-iframe');
+            if (iframeEl) {
+                iframeEl.src = googleEmbedUrl;
+            }
+            
+            // Restaurar Conexión de Google
             var savedConnected = localStorage.getItem('familysync_gcal_connected');
             var savedType = localStorage.getItem('familysync_gcal_type');
             if (savedConnected === 'true') {
@@ -1545,19 +1913,18 @@
                     document.getElementById('gcal-status-text').className = "font-bold text-emerald-600";
                     document.getElementById('google-sync-now-btn').classList.remove('hidden');
                 }
-                logDebug("Restaurada la sesión de Google Calendar guardada.", "success");
+                logDebug("Sincronización automática de Google Calendar restaurada.", "success");
             }
 
             renderWeekNav();
             renderWeeklyGrid();
             renderMonthlyGrid();
+            renderMiniCalendar();
             showDayDetailsInMonth(selectedDate);
             
-            // Restaurar pestaña activa anterior
             switchView(savedTab);
         }
 
-        // Comprobación de estado de carga para compatibilidad móvil del 100%
         if (document.readyState === "complete" || document.readyState === "interactive") {
             initApp();
         } else {
