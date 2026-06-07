@@ -11,6 +11,11 @@
     <!-- html2canvas para generación de imágenes nativas de alta calidad -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
+    <!-- Firebase Compat Libraries (Garantía de funcionamiento en 100% de celulares) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
     <!-- Google Identity Services (GIS) para autenticación sin bloqueos -->
     <script src="https://accounts.google.com/gsi/client" defer></script>
     
@@ -201,7 +206,7 @@
                     </div>
                     <p class="leading-relaxed">Tu aplicación sigue utilizando la clave de prueba genérica. Para que la sincronización con tu cuenta real funcione, debes reemplazar el ID en tu archivo HTML de GitHub.</p>
                     <div class="bg-amber-100/50 p-2.5 rounded-xl font-mono text-[9px] text-amber-800 break-all border border-amber-200">
-                        Línea 602: let googleClientId = "tu-ID-de-google-cloud";
+                        Línea 601: let googleClientId = "tu-ID-de-google-cloud";
                     </div>
                 </div>
 
@@ -385,34 +390,34 @@
     </div>
 
     <!-- CÓDIGO LOGÍSTICO Y CONEXIÓN CON GOOGLE CALENDAR -->
-    <script type="module">
+    <script>
         // Variables de Estado de la Aplicación
-        let events = [];
-        let hasFirebase = false;
-        let db = null;
-        let auth = null;
-        let user = null;
-        let appId = 'familysync-unir-app';
-        let googleToken = null;
-        let isGoogleConnected = false;
-        let tokenClient = null;
+        var events = [];
+        var hasFirebase = false;
+        var db = null;
+        var auth = null;
+        var user = null;
+        var appId = 'familysync-unir-app';
+        var googleToken = null;
+        var isGoogleConnected = false;
+        var tokenClient = null;
         
         // ==========================================
         // ⚠️ REEMPLAZA ESTE CÓDIGO CON TU ID REAL DE GOOGLE:
-        let googleClientId = "987206366323-7orcablju9957uve00ejinlt26baqd3k.apps.googleusercontent.com";
+        var googleClientId = "987206366323-7orcablju9957uve00ejinlt26baqd3k.apps.googleusercontent.com";
         // ==========================================
         
-        let googleCalendarId = "primary";
-        let currentWeekIndex = 0;
-        let selectedDate = "2026-06-08";
-        let editingEventId = null;
+        var googleCalendarId = "primary";
+        var currentWeekIndex = 0;
+        var selectedDate = "2026-06-08";
+        var editingEventId = null;
 
-        const dayHoursList = [
+        var dayHoursList = [
             "07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00",
             "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00"
         ];
 
-        const weeks = [
+        var weeks = [
             { id: 1, start: "2026-06-08", end: "2026-06-14", label: "SEMANA 1 (JUN 08 - JUN 14)" },
             { id: 2, start: "2026-06-15", end: "2026-06-21", label: "SEMANA 2 (JUN 15 - JUN 21)" },
             { id: 3, start: "2026-06-22", end: "2026-06-28", label: "SEMANA 3 (JUN 22 - JUN 28)" },
@@ -440,25 +445,26 @@
         window.testPopups = testPopups;
 
         // Consola de Diagnóstico Integrada para celulares
-        function logDebug(message, type = "info") {
-            const consoleEl = document.getElementById('debug-console');
-            const linesEl = document.getElementById('debug-log-lines');
+        function logDebug(message, type) {
+            type = type || "info";
+            var consoleEl = document.getElementById('debug-console');
+            var linesEl = document.getElementById('debug-log-lines');
             if (consoleEl && linesEl) {
-                const line = document.createElement('div');
+                var line = document.createElement('div');
                 if (type === "error") line.className = "text-rose-400 font-semibold";
                 else if (type === "warning") line.className = "text-amber-400";
                 else if (type === "success") line.className = "text-emerald-400 font-semibold";
                 else line.className = "text-slate-300";
                 
-                line.innerText = `[${new Date().toLocaleTimeString()}] ${message}`;
+                line.innerText = "[" + new Date().toLocaleTimeString() + "] " + message;
                 linesEl.appendChild(line);
                 linesEl.scrollTop = linesEl.scrollHeight;
             }
-            console.log(`[FamilySync Debug] ${message}`);
+            console.log("[FamilySync Debug] " + message);
         }
 
         function toggleDebugConsole() {
-            const consoleEl = document.getElementById('debug-console');
+            var consoleEl = document.getElementById('debug-console');
             if (consoleEl) {
                 consoleEl.classList.toggle('hidden');
             }
@@ -467,7 +473,7 @@
         // Probar si el navegador está bloqueando ventanas emergentes
         function testPopups() {
             logDebug("Realizando prueba de ventanas emergentes (Pop-ups)...");
-            const testWin = window.open("", "_blank", "width=100,height=100");
+            var testWin = window.open("", "_blank", "width=100,height=100");
             if (!testWin || testWin.closed || typeof testWin.closed === 'undefined') {
                 logDebug("🚨 ¡Ventanas emergentes BLOQUEADAS! Tu navegador está impidiendo abrir la ventana de Google. Por favor, habilita las ventanas emergentes en los ajustes de tu navegador.", "error");
                 showToast("🚨 Ventana emergente bloqueada por el navegador móvil.");
@@ -479,9 +485,9 @@
         }
 
         // Gestión de persistencia local (Local Storage)
-        const LOCAL_STORAGE_KEY = 'familysync_local_events';
+        var LOCAL_STORAGE_KEY = 'familysync_local_events';
         function getLocalEvents() {
-            const data = localStorage.getItem(LOCAL_STORAGE_KEY);
+            var data = localStorage.getItem(LOCAL_STORAGE_KEY);
             return data ? JSON.parse(data) : [];
         }
         function saveLocalEvents(data) {
@@ -515,11 +521,11 @@
         // Activación del almacenamiento local
         function activateLocalMode() {
             logDebug("Activando almacenamiento offline en memoria local.", "info");
-            const badge = document.getElementById('cloud-status-badge');
+            var badge = document.getElementById('cloud-status-badge');
             if (badge) {
                 badge.className = "flex items-center gap-1.5 bg-blue-100 text-[#1f4e79] px-2.5 py-1.5 rounded-xl text-[9px] font-bold border border-[#9bc2e6] shadow-sm";
             }
-            const badgeText = document.getElementById('cloud-status-text');
+            var badgeText = document.getElementById('cloud-status-text');
             if (badgeText) {
                 badgeText.innerText = "Modo Local";
             }
@@ -533,49 +539,53 @@
             refreshAllViews();
         }
 
-        // Inicialización Segura y Dinámica de Firebase
-        async function checkAndInitFirebase() {
+        // Inicialización Segura y Dinámica de Firebase (Estilo Tradicional Compat)
+        function checkAndInitFirebase() {
             try {
-                const configString = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
-                if (configString) {
-                    const firebaseConfig = JSON.parse(configString);
+                var configString = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
+                if (configString && typeof firebase !== 'undefined') {
+                    var firebaseConfig = JSON.parse(configString);
                     if (firebaseConfig && firebaseConfig.apiKey) {
                         logDebug("Cargando módulos de base de datos en la nube de Firebase...");
-                        const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
-                        const { getAuth, signInAnonymously, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
-                        const { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
                         
-                        const firebaseApp = initializeApp(firebaseConfig);
-                        auth = getAuth(firebaseApp);
-                        db = getFirestore(firebaseApp);
+                        firebase.initializeApp(firebaseConfig);
+                        auth = firebase.auth();
+                        db = firebase.firestore();
                         hasFirebase = true;
                         
-                        await signInAnonymously(auth);
-                        onAuthStateChanged(auth, (currentUser) => {
-                            if (currentUser) {
-                                user = currentUser;
-                                document.getElementById('cloud-status-badge').className = "flex items-center gap-1.5 bg-[#e2f0d9] text-[#385723] px-2.5 py-1.5 rounded-xl text-[9px] font-bold border border-[#a9d18e] shadow-sm";
-                                document.getElementById('cloud-status-text').innerText = "Nube Activa";
-                                showToast("🌐 Conectado a la Base de Datos en tiempo real");
-                                
-                                const eventsCol = collection(db, 'artifacts', appId, 'users', user.uid, 'events');
-                                onSnapshot(eventsCol, (snapshot) => {
-                                    events = [];
-                                    snapshot.forEach(docSnap => {
-                                        events.push({ id: docSnap.id, ...docSnap.data() });
-                                    });
-                                    if (events.length === 0) {
-                                        const initialData = getInitialEventsArray();
-                                        initialData.forEach(async (item) => {
-                                            await addDoc(eventsCol, item);
-                                        });
-                                    } else {
-                                        refreshAllViews();
-                                    }
-                                });
-                            } else {
-                                activateLocalMode();
-                            }
+                        auth.signInAnonymously().then(function(cred) {
+                            auth.onAuthStateChanged(function(currentUser) {
+                                if (currentUser) {
+                                    user = currentUser;
+                                    document.getElementById('cloud-status-badge').className = "flex items-center gap-1.5 bg-[#e2f0d9] text-[#385723] px-2.5 py-1.5 rounded-xl text-[9px] font-bold border border-[#a9d18e] shadow-sm";
+                                    document.getElementById('cloud-status-text').innerText = "Nube Activa";
+                                    showToast("🌐 Conectado a la Base de Datos en tiempo real");
+                                    
+                                    db.collection('artifacts').doc(appId).collection('users').doc(user.uid).collection('events')
+                                      .onSnapshot(function(snapshot) {
+                                          events = [];
+                                          snapshot.forEach(function(docSnap) {
+                                              events.push(Object.assign({ id: docSnap.id }, docSnap.data()));
+                                          });
+                                          if (events.length === 0) {
+                                              var initialData = getInitialEventsArray();
+                                              initialData.forEach(function(item) {
+                                                  db.collection('artifacts').doc(appId).collection('users').doc(user.uid).collection('events').add(item);
+                                              });
+                                          } else {
+                                              refreshAllViews();
+                                          }
+                                      }, function(error) {
+                                          logDebug("Error Firebase onSnapshot: " + error.message, "error");
+                                          activateLocalMode();
+                                      });
+                                } else {
+                                    activateLocalMode();
+                                }
+                            });
+                        }).catch(function(err) {
+                            logDebug("Error de Auth en Firebase: " + err.message, "error");
+                            activateLocalMode();
                         });
                     } else {
                         activateLocalMode();
@@ -584,17 +594,17 @@
                     activateLocalMode();
                 }
             } catch (error) {
-                console.warn("No se detectó base de datos externa Firebase. Activando local.", error);
+                console.warn("No se pudo iniciar Firebase. Iniciando modo local offline.", error);
                 activateLocalMode();
             }
         }
 
         // 2. CONEXIÓN E INTEGRACIÓN DIRECTA CON GOOGLE CALENDAR (GIS)
         function checkGoogleClientId() {
-            const isDefault = googleClientId === "894231804791-familyunir.apps.googleusercontent.com";
-            const isEmpty = !googleClientId || googleClientId.trim() === "" || googleClientId.includes("PEGA_AQUÍ");
+            var isDefault = googleClientId === "894231804791-familyunir.apps.googleusercontent.com";
+            var isEmpty = !googleClientId || googleClientId.trim() === "" || googleClientId.includes("PEGA_AQUÍ");
             
-            const warningEl = document.getElementById('gcal-id-warning');
+            var warningEl = document.getElementById('gcal-id-warning');
             if (isDefault || isEmpty) {
                 if (warningEl) warningEl.classList.remove('hidden');
                 logDebug("⚠️ Alerta: Estás utilizando la clave de prueba genérica. Para conexión real, reemplázala con tu ID de Google Cloud.", "warning");
@@ -619,7 +629,7 @@
                 tokenClient = google.accounts.oauth2.initTokenClient({
                     client_id: googleClientId,
                     scope: 'https://www.googleapis.com/auth/calendar.events',
-                    callback: async (resp) => {
+                    callback: function(resp) {
                         logDebug("Google respondió al inicio de sesión.", "success");
                         if (resp.error !== undefined) {
                             logDebug("Error retornado por Google: " + resp.error, "error");
@@ -636,9 +646,9 @@
                         
                         logDebug("✅ ¡Acceso a Google Calendar concedido de forma segura!", "success");
                         showToast("🔌 Cuenta de Google autorizada con éxito");
-                        await syncWithGoogleCalendar();
+                        syncWithGoogleCalendar();
                     },
-                    error_callback: (err) => {
+                    error_callback: function(err) {
                         logDebug("Error en ventana de Google: " + JSON.stringify(err), "error");
                         showToast("❌ Error al conectar.");
                     }
@@ -650,14 +660,14 @@
         }
 
         function connectToGoogle() {
-            // Abrir la consola automáticamente para que Albert pueda ver el diagnóstico
+            // Abrir la consola automáticamente para diagnóstico inmediato
             document.getElementById('debug-console').classList.remove('hidden');
             logDebug("Presionaste: Conectar con Google Calendar.");
 
             if (!tokenClient) {
                 logDebug("Lanzando simulador de sincronización local...", "warning");
                 showToast("🔮 Iniciando simulador de Sincronización...");
-                setTimeout(() => {
+                setTimeout(function() {
                     document.getElementById('gcal-status-text').innerText = "Conectado (Simulado)";
                     document.getElementById('gcal-status-text').className = "font-bold text-emerald-600 animate-pulse";
                     document.getElementById('google-sync-now-btn').classList.remove('hidden');
@@ -678,38 +688,37 @@
             }
         }
 
-        async function syncWithGoogleCalendar() {
+        function syncWithGoogleCalendar() {
             if (!isGoogleConnected) return;
             logDebug("Obteniendo eventos de Google Calendar del mes de Junio...");
             showToast("🔄 Sincronizando eventos con Google...");
             
             if (googleToken) {
-                try {
-                    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${googleCalendarId}/events?timeMin=2026-06-01T00:00:00Z&timeMax=2026-06-30T23:59:59Z`, {
-                        headers: { 'Authorization': `Bearer ${googleToken}` }
-                    });
-                    const data = await response.json();
-                    
+                fetch("https://www.googleapis.com/calendar/v3/calendars/" + googleCalendarId + "/events?timeMin=2026-06-01T00:00:00Z&timeMax=2026-06-30T23:59:59Z", {
+                    headers: { 'Authorization': 'Bearer ' + googleToken }
+                })
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
                     if (data.items) {
-                        logDebug(`Descargados ${data.items.length} eventos de Google. Integrando...`, "success");
-                        let addedCount = 0;
-                        data.items.forEach(async (gEvent) => {
-                            const exists = events.some(e => e.title === gEvent.summary);
+                        logDebug("Descargados " + data.items.length + " eventos de Google. Integrando...", "success");
+                        var addedCount = 0;
+                        data.items.forEach(function(gEvent) {
+                            var exists = events.some(function(e) { return e.title === gEvent.summary; });
                             if (!exists && gEvent.start && gEvent.start.dateTime) {
-                                const startDate = new Date(gEvent.start.dateTime);
-                                const endDate = new Date(gEvent.end.dateTime);
-                                const duration = Math.round((endDate - startDate) / 60000);
-                                const dateStr = startDate.toISOString().split('T')[0];
-                                const startStr = startDate.toTimeString().split(' ')[0].substring(0, 5);
+                                var startDate = new Date(gEvent.start.dateTime);
+                                var endDate = new Date(gEvent.end.dateTime);
+                                var duration = Math.round((endDate - startDate) / 60000);
+                                var dateStr = startDate.toISOString().split('T')[0];
+                                var startStr = startDate.toTimeString().split(' ')[0].substring(0, 5);
                                 
-                                let type = "DISPONIBLE";
-                                if (gEvent.summary.toLowerCase().includes("clase") || gEvent.summary.toLowerCase().includes("unir")) {
+                                var type = "DISPONIBLE";
+                                if (gEvent.summary.toLowerCase().indexOf("clase") !== -1 || gEvent.summary.toLowerCase().indexOf("unir") !== -1) {
                                     type = "ESTUDIO";
-                                } else if (gEvent.summary.toLowerCase().includes("terapia")) {
+                                } else if (gEvent.summary.toLowerCase().indexOf("terapia") !== -1) {
                                     type = "TRABAJO";
                                 }
 
-                                const newItem = {
+                                var newItem = {
                                     title: gEvent.summary,
                                     type: type,
                                     date: dateStr,
@@ -718,13 +727,9 @@
                                 };
 
                                 if (hasFirebase && user) {
-                                    // Guardar en Firestore
-                                    const { addDoc, collection } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
-                                    const eventsCol = collection(db, 'artifacts', appId, 'users', user.uid, 'events');
-                                    await addDoc(eventsCol, newItem);
+                                    db.collection('artifacts').doc(appId).collection('users').doc(user.uid).collection('events').add(newItem);
                                 } else {
-                                    // Guardar Localmente
-                                    events.push({ id: "e_" + Date.now() + Math.random(), ...newItem });
+                                    events.push(Object.assign({ id: "e_" + Date.now() + Math.random() }, newItem));
                                 }
                                 addedCount++;
                             }
@@ -733,43 +738,45 @@
                             saveLocalEvents(events);
                             refreshAllViews();
                         }
-                        logDebug(`Sincronización completa. Se integraron ${addedCount} eventos nuevos.`, "success");
+                        logDebug("Sincronización completa. Se integraron " + addedCount + " eventos nuevos.", "success");
                         showToast("✅ Calendario sincronizado.");
                     } else {
                         logDebug("Google Calendar no retornó eventos nuevos.", "info");
                     }
-                } catch (error) {
+                })
+                .catch(function(error) {
                     logDebug("Error de red sincronizando: " + error.message, "error");
-                }
+                });
             }
         }
 
-        async function pushEventToGoogle(newEvent) {
+        function pushEventToGoogle(newEvent) {
             if (!isGoogleConnected || !googleToken) return;
             logDebug("Exportando nueva actividad a tu Google Calendar...");
-            const startDateTime = new Date(`${newEvent.date}T${newEvent.start}:00`).toISOString();
-            const endDateTime = new Date(new Date(`${newEvent.date}T${newEvent.start}:00`).getTime() + newEvent.duration * 60000).toISOString();
+            var startDateTime = new Date(newEvent.date + "T" + newEvent.start + ":00").toISOString();
+            var endDateTime = new Date(new Date(newEvent.date + "T" + newEvent.start + ":00").getTime() + newEvent.duration * 60000).toISOString();
 
-            const resource = {
-                summary: `[${newEvent.type}] ${newEvent.title}`,
+            var resource = {
+                summary: "[" + newEvent.type + "] " + newEvent.title,
                 description: 'Creado vía FamilySync Agenda',
                 start: { dateTime: startDateTime, timeZone: 'America/Bogota' },
                 end: { dateTime: endDateTime, timeZone: 'America/Bogota' }
             };
 
-            try {
-                await fetch(`https://www.googleapis.com/calendar/v3/calendars/${googleCalendarId}/events`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${googleToken}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(resource)
-                });
+            fetch("https://www.googleapis.com/calendar/v3/calendars/" + googleCalendarId + "/events", {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + googleToken,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(resource)
+            })
+            .then(function() {
                 logDebug("¡Evento guardado con éxito en tu Google Calendar!", "success");
-            } catch (err) {
+            })
+            .catch(function(err) {
                 logDebug("Error exportando a Google: " + err.message, "error");
-            }
+            });
         }
 
         // 3. OPERACIONES DE INTERFAZ Y RENDERIZACIÓN
@@ -779,12 +786,12 @@
             document.getElementById('view-month').classList.add('hidden');
             document.getElementById('view-stats').classList.add('hidden');
 
-            ['day', 'week', 'month', 'stats'].forEach(t => {
-                document.getElementById(`tab-${t}`).className = "py-2.5 text-[10px] font-bold rounded-xl transition text-slate-500 hover:text-slate-950";
+            ['day', 'week', 'month', 'stats'].forEach(function(t) {
+                document.getElementById("tab-" + t).className = "py-2.5 text-[10px] font-bold rounded-xl transition text-slate-500 hover:text-slate-950";
             });
 
-            document.getElementById(`view-${view}`).classList.remove('hidden');
-            document.getElementById(`tab-${view}`).className = "py-2.5 text-[10px] font-bold rounded-xl transition bg-[#f5eedf] text-slate-950 shadow-sm border border-[#dfd5be]/60";
+            document.getElementById("view-" + view).classList.remove('hidden');
+            document.getElementById("tab-" + view).className = "py-2.5 text-[10px] font-bold rounded-xl transition bg-[#f5eedf] text-slate-950 shadow-sm border border-[#dfd5be]/60";
 
             if (view === 'day') renderEvents();
             else if (view === 'week') renderWeeklyGrid();
@@ -818,24 +825,27 @@
         }
 
         function renderDaySelector() {
-            const daySelector = document.getElementById('day-selector');
+            var daySelector = document.getElementById('day-selector');
             if (!daySelector) return;
             daySelector.innerHTML = '';
             
-            const startDate = new Date(weeks[currentWeekIndex].start + "T00:00:00");
-            const daysNames = ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"];
+            var startDate = new Date(weeks[currentWeekIndex].start + "T00:00:00");
+            var daysNames = ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"];
             
-            for (let i = 0; i < 6; i++) {
-                const currentDay = new Date(startDate);
+            for (var i = 0; i < 6; i++) {
+                var currentDay = new Date(startDate);
                 currentDay.setDate(startDate.getDate() + i);
-                const dateString = currentDay.toISOString().split('T')[0];
-                const isSelected = dateString === selectedDate;
+                var dateString = currentDay.toISOString().split('T')[0];
+                var isSelected = dateString === selectedDate;
                 
-                const btn = document.createElement('button');
-                btn.onclick = () => selectDay(dateString);
-                btn.className = `flex-1 py-2 px-1 rounded-2xl flex flex-col items-center transition-all ${isSelected ? 'bg-[#1f4e79] text-white font-bold shadow-md' : 'bg-[#eae3d2] text-[#4a3f31] hover:bg-white border border-[#dfd5be]'}`;
+                var btn = document.createElement('button');
+                (function(dStr) {
+                    btn.onclick = function() { selectDay(dStr); };
+                })(dateString);
                 
-                const num = currentDay.getDate();
+                btn.className = "flex-1 py-2 px-1 rounded-2xl flex flex-col items-center transition-all " + (isSelected ? 'bg-[#1f4e79] text-white font-bold shadow-md' : 'bg-[#eae3d2] text-[#4a3f31] hover:bg-white border border-[#dfd5be]');
+                
+                var num = currentDay.getDate();
                 btn.innerHTML = `
                     <span class="text-[8px] tracking-wider uppercase font-bold">${daysNames[i]}</span>
                     <span class="text-xs font-bold mt-0.5">${num}</span>
@@ -845,34 +855,34 @@
         }
 
         function renderEvents() {
-            const container = document.getElementById('day-timeline-container');
+            var container = document.getElementById('day-timeline-container');
             if (!container) return;
             container.innerHTML = '';
 
-            const dayEvents = events.filter(e => e.date === selectedDate);
+            var dayEvents = events.filter(function(e) { return e.date === selectedDate; });
 
-            dayHoursList.forEach(hour => {
-                const row = document.createElement('div');
+            dayHoursList.forEach(function(hour) {
+                var row = document.createElement('div');
                 row.className = "py-3 flex items-start gap-3 border-b border-[#dfd5be]/40 relative";
 
-                const matchedEvent = dayEvents.find(e => {
-                    const [eHour] = e.start.split(':');
-                    const [targetHour] = hour.split(':');
-                    return eHour === targetHour;
+                var matchedEvent = dayEvents.find(function(e) {
+                    var evHour = e.start.split(':')[0];
+                    var targetHour = hour.split(':')[0];
+                    return evHour === targetHour;
                 });
 
-                const hourCol = `
+                var hourCol = `
                     <div class="w-14 text-[10px] font-bold font-mono text-slate-400 mt-1 flex flex-col">
                         <span>${hour}</span>
                         <span class="text-[8px] text-slate-300">AM/PM</span>
                     </div>
                 `;
 
-                let contentCol = "";
+                var contentCol = "";
                 if (matchedEvent) {
-                    let badgeColor = "border-l-4 border-l-slate-400 bg-slate-50";
-                    let badgeTag = "";
-                    const endTime = calculateEndTime(matchedEvent.start, matchedEvent.duration);
+                    var badgeColor = "border-l-4 border-l-slate-400 bg-slate-50";
+                    var badgeTag = "";
+                    var endTime = calculateEndTime(matchedEvent.start, matchedEvent.duration);
 
                     if (matchedEvent.type === 'ESTUDIO') {
                         badgeColor = "border-l-4 border-l-[#1f4e79] bg-[#ddebf7]/70 border border-[#9bc2e6]";
@@ -916,30 +926,31 @@
         }
 
         function renderWeeklyGrid() {
-            const body = document.getElementById('week-grid-body');
+            var body = document.getElementById('week-grid-body');
             if (!body) return;
             body.innerHTML = '';
 
-            const weekStart = new Date(weeks[currentWeekIndex].start + "T00:00:00");
-            const daysDates = [];
-            for (let i = 0; i < 6; i++) {
-                const day = new Date(weekStart);
+            var weekStart = new Date(weeks[currentWeekIndex].start + "T00:00:00");
+            var daysDates = [];
+            for (var i = 0; i < 6; i++) {
+                var day = new Date(weekStart);
                 day.setDate(weekStart.getDate() + i);
                 daysDates.push(day.toISOString().split('T')[0]);
             }
 
-            dayHoursList.forEach(hour => {
-                const tr = document.createElement('tr');
+            dayHoursList.forEach(function(hour) {
+                var tr = document.createElement('tr');
                 tr.innerHTML = `<td class="py-2.5 pr-2 font-bold text-slate-400 font-mono text-[9px]">${hour}</td>`;
 
-                daysDates.forEach(date => {
-                    const matchedEvents = events.filter(e => e.date === date);
-                    let cellContent = "";
+                daysDates.forEach(function(date) {
+                    var matchedEvents = events.filter(function(e) { return e.date === date; });
+                    var cellContent = "";
 
-                    let activeEvent = null;
-                    for (let e of matchedEvents) {
-                        const [evH] = e.start.split(':');
-                        const [targetH] = hour.split(':');
+                    var activeEvent = null;
+                    for (var k = 0; k < matchedEvents.length; k++) {
+                        var e = matchedEvents[k];
+                        var evH = e.start.split(':')[0];
+                        var targetH = hour.split(':')[0];
                         if (evH === targetH) {
                             activeEvent = e;
                             break;
@@ -947,7 +958,7 @@
                     }
 
                     if (activeEvent) {
-                        let cellColor = "bg-slate-100 text-slate-500";
+                        var cellColor = "bg-slate-100 text-slate-500";
                         if (activeEvent.type === 'ESTUDIO') cellColor = "bg-[#ddebf7] text-[#1f4e79] border border-[#9bc2e6]";
                         else if (activeEvent.type === 'TRABAJO') cellColor = "bg-[#fce4d6] text-[#c65911] border border-[#f4b183]";
                         else if (activeEvent.type === 'CASA') cellColor = "bg-[#e2f0d9] text-[#385723] border border-[#a9d18e]";
@@ -975,43 +986,45 @@
         }
 
         function renderMonthlyGrid() {
-            const container = document.getElementById('month-days-container');
+            var container = document.getElementById('month-days-container');
             if (!container) return;
             container.innerHTML = '';
 
-            const numDays = 30;
+            var numDays = 30;
 
-            for (let i = 1; i <= numDays; i++) {
-                const dayStr = String(i).padStart(2, '0');
-                const dateStr = `2026-06-${dayStr}`;
+            for (var i = 1; i <= numDays; i++) {
+                var dayStr = String(i).padStart(2, '0');
+                var dateStr = "2026-06-" + dayStr;
 
-                const dayEvents = events.filter(e => e.date === dateStr);
-                const cell = document.createElement('div');
+                var dayEvents = events.filter(function(e) { return e.date === dateStr; });
+                var cell = document.createElement('div');
                 
-                let borderStyle = "border-slate-200";
-                let bgStyle = "bg-white";
+                var borderStyle = "border-slate-200";
+                var bgStyle = "bg-white";
                 
                 if (dateStr === selectedDate) {
                     borderStyle = "border-[#1f4e79] ring-2 ring-[#1f4e79]/20";
                     bgStyle = "bg-slate-100/60";
                 }
 
-                cell.onclick = () => {
-                    selectedDate = dateStr;
-                    const foundWeekIdx = weeks.findIndex(w => dateStr >= w.start && dateStr <= w.end);
-                    if (foundWeekIdx !== -1) currentWeekIndex = foundWeekIdx;
-                    
-                    renderWeekNav();
-                    renderMonthlyGrid();
-                    showDayDetailsInMonth(dateStr);
-                };
+                (function(dStr) {
+                    cell.onclick = function() {
+                        selectedDate = dStr;
+                        var foundWeekIdx = weeks.findIndex(function(w) { return dStr >= w.start && dStr <= w.end; });
+                        if (foundWeekIdx !== -1) currentWeekIndex = foundWeekIdx;
+                        
+                        renderWeekNav();
+                        renderMonthlyGrid();
+                        showDayDetailsInMonth(dStr);
+                    };
+                })(dateStr);
 
-                cell.className = `${bgStyle} border ${borderStyle} rounded-xl p-1.5 min-h-[90px] flex flex-col justify-between items-start cursor-pointer hover:bg-slate-50 transition duration-150 relative overflow-hidden`;
+                cell.className = bgStyle + " border " + borderStyle + " rounded-xl p-1.5 min-h-[90px] flex flex-col justify-between items-start cursor-pointer hover:bg-slate-50 transition duration-150 relative overflow-hidden";
 
-                let textBlocksList = '<div class="space-y-1 w-full overflow-hidden flex-1 mt-1">';
+                var textBlocksList = '<div class="space-y-1 w-full overflow-hidden flex-1 mt-1">';
                 if (dayEvents.length > 0) {
-                    dayEvents.slice(0, 2).forEach(e => {
-                        let c = "bg-slate-100 text-slate-700";
+                    dayEvents.slice(0, 2).forEach(function(e) {
+                        var c = "bg-slate-100 text-slate-700";
                         if (e.type === 'ESTUDIO') c = "bg-[#ddebf7] text-[#1f4e79] border border-[#9bc2e6]";
                         else if (e.type === 'TRABAJO') c = "bg-[#fce4d6] text-[#c65911] border border-[#f4b183]";
                         else if (e.type === 'CASA') c = "bg-[#e2f0d9] text-[#385723] border border-[#a9d18e]";
@@ -1042,20 +1055,20 @@
         }
 
         function showDayDetailsInMonth(dateStr) {
-            const title = document.getElementById('details-panel-title');
-            const dateLabel = document.getElementById('details-panel-date');
-            const listContainer = document.getElementById('details-panel-list');
+            var title = document.getElementById('details-panel-title');
+            var dateLabel = document.getElementById('details-panel-date');
+            var listContainer = document.getElementById('details-panel-list');
             if (!title || !dateLabel || !listContainer) return;
 
-            const formattedDate = new Date(dateStr + "T00:00:00").toLocaleDateString('es-ES', {
+            var formattedDate = new Date(dateStr + "T00:00:00").toLocaleDateString('es-ES', {
                 weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
             });
 
-            title.innerText = `Agenda del Día`;
+            title.innerText = "Agenda del Día";
             dateLabel.innerText = formattedDate;
 
-            const dayEvents = events.filter(e => e.date === dateStr);
-            dayEvents.sort((a, b) => a.start.localeCompare(b.start));
+            var dayEvents = events.filter(function(e) { return e.date === dateStr; });
+            dayEvents.sort(function(a, b) { return a.start.localeCompare(b.start); });
 
             listContainer.innerHTML = '';
 
@@ -1070,13 +1083,13 @@
                 return;
             }
 
-            dayEvents.forEach(e => {
-                let badgeColor = "bg-slate-100 text-slate-700";
+            dayEvents.forEach(function(e) {
+                var badgeColor = "bg-slate-100 text-slate-700";
                 if (e.type === 'ESTUDIO') badgeColor = "bg-[#ddebf7] text-[#1f4e79] border border-[#9bc2e6]";
                 else if (e.type === 'TRABAJO') badgeColor = "bg-[#fce4d6] text-[#c65911] border border-[#f4b183]";
                 else if (e.type === 'CASA') badgeColor = "bg-[#e2f0d9] text-[#385723] border border-[#a9d18e]";
 
-                const endTime = calculateEndTime(e.start, e.duration);
+                var endTime = calculateEndTime(e.start, e.duration);
                 listContainer.innerHTML += `
                     <div onclick="openEditEventModal('${e.id}')" class="flex items-center justify-between p-3 rounded-2xl border border-slate-100 bg-slate-50/50 cursor-pointer hover:bg-slate-100 transition">
                         <div class="flex items-center gap-2.5 max-w-[85%]">
@@ -1093,19 +1106,19 @@
         }
 
         function calculateStatistics() {
-            const container = document.getElementById('stats-bars-container');
+            var container = document.getElementById('stats-bars-container');
             if (!container) return;
             container.innerHTML = '';
 
-            let mins = { ESTUDIO: 0, TRABAJO: 0, CASA: 0 };
-            events.forEach(e => { if (mins[e.type] !== undefined) mins[e.type] += e.duration; });
+            var mins = { ESTUDIO: 0, TRABAJO: 0, CASA: 0 };
+            events.forEach(function(e) { if (mins[e.type] !== undefined) mins[e.type] += e.duration; });
 
-            const colors = { ESTUDIO: "bg-[#1f4e79]", TRABAJO: "bg-[#c65911]", CASA: "bg-[#385723]" };
-            const labels = { ESTUDIO: "Estudio UNIR / Trading", TRABAJO: "Terapias Katerine", CASA: "Hogar y Logística" };
+            var colors = { ESTUDIO: "bg-[#1f4e79]", TRABAJO: "bg-[#c65911]", CASA: "bg-[#385723]" };
+            var labels = { ESTUDIO: "Estudio UNIR / Trading", TRABAJO: "Terapias Katerine", CASA: "Hogar y Logística" };
 
-            Object.keys(mins).forEach(key => {
-                const hrs = (mins[key] / 60).toFixed(1);
-                const percent = Math.min((mins[key] / 1200) * 100, 100);
+            Object.keys(mins).forEach(function(key) {
+                var hrs = (mins[key] / 60).toFixed(1);
+                var percent = Math.min((mins[key] / 1200) * 100, 100);
 
                 container.innerHTML += `
                     <div class="space-y-1">
@@ -1122,33 +1135,34 @@
         }
 
         function generateImage() {
-            const view = document.getElementById('export-view-select').value;
-            const container = document.getElementById('capture-container');
-            const renderArea = document.getElementById('capture-render-area');
-            const subTag = document.getElementById('capture-sub-tag');
+            var view = document.getElementById('export-view-select').value;
+            var container = document.getElementById('capture-container');
+            var renderArea = document.getElementById('capture-render-area');
+            var subTag = document.getElementById('capture-sub-tag');
 
             container.classList.remove('hidden');
             renderArea.innerHTML = '';
 
             if (view === 'week') {
                 subTag.innerText = "Vista Semanal";
-                const weekStart = new Date(weeks[currentWeekIndex].start + "T00:00:00");
-                const daysDates = [];
-                for (let i = 0; i < 6; i++) {
-                    const day = new Date(weekStart);
+                var weekStart = new Date(weeks[currentWeekIndex].start + "T00:00:00");
+                var daysDates = [];
+                for (var i = 0; i < 6; i++) {
+                    var day = new Date(weekStart);
                     day.setDate(weekStart.getDate() + i);
                     daysDates.push(day.toISOString().split('T')[0]);
                 }
 
-                let tableRows = '';
-                dayHoursList.forEach(hour => {
-                    let rowCells = `<td style="padding: 6px; font-weight: bold; color: #64748b; border-bottom: 1px solid #e2e8f0; font-family: monospace;">${hour}</td>`;
-                    daysDates.forEach(date => {
-                        const matchedEvents = events.filter(e => e.date === date);
-                        let activeEvent = null;
-                        for (let e of matchedEvents) {
-                            const [evH] = e.start.split(':');
-                            const [targetH] = hour.split(':');
+                var tableRows = '';
+                dayHoursList.forEach(function(hour) {
+                    var rowCells = `<td style="padding: 6px; font-weight: bold; color: #64748b; border-bottom: 1px solid #e2e8f0; font-family: monospace;">${hour}</td>`;
+                    daysDates.forEach(function(date) {
+                        var matchedEvents = events.filter(function(e) { return e.date === date; });
+                        var activeEvent = null;
+                        for (var k = 0; k < matchedEvents.length; k++) {
+                            var e = matchedEvents[k];
+                            var evH = e.start.split(':')[0];
+                            var targetH = hour.split(':')[0];
                             if (evH === targetH) {
                                 activeEvent = e;
                                 break;
@@ -1156,7 +1170,7 @@
                         }
 
                         if (activeEvent) {
-                            let cellStyle = "background-color: #f1f5f9; color: #475569;";
+                            var cellStyle = "background-color: #f1f5f9; color: #475569;";
                             if (activeEvent.type === 'ESTUDIO') cellStyle = "background-color: #ddebf7; color: #1f4e79; font-weight: bold; border: 1px solid #9bc2e6;";
                             else if (activeEvent.type === 'TRABAJO') cellStyle = "background-color: #fce4d6; color: #c65911; font-weight: bold; border: 1px solid #f4b183;";
                             else if (activeEvent.type === 'CASA') cellStyle = "background-color: #e2f0d9; color: #385723; font-weight: bold; border: 1px solid #a9d18e;";
@@ -1194,7 +1208,7 @@
                 `;
             } else {
                 subTag.innerText = "Mes de Junio 2026";
-                let html = `
+                var html = `
                     <div style="font-size: 13px; font-weight: bold; color: #1f4e79; margin-bottom: 12px; border-bottom: 2px solid #1f4e79/30; padding-bottom: 4px; text-transform: uppercase;">Calendario de Actividades Mensuales (Junio 2026)</div>
                     <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; text-align: left; font-size: 9px;">
                         <div style="text-align: center; font-weight: bold; color: #64748b; padding-bottom: 4px; border-bottom: 1px solid #cbd5e1;">Lunes</div>
@@ -1206,15 +1220,15 @@
                         <div style="text-align: center; font-weight: bold; color: #64748b; padding-bottom: 4px; border-bottom: 1px solid #cbd5e1;">Domingo</div>
                 `;
                 
-                for (let i = 1; i <= 30; i++) {
-                    const dayStr = String(i).padStart(2, '0');
-                    const dateStr = `2026-06-${dayStr}`;
-                    const dayEvents = events.filter(e => e.date === dateStr);
-                    dayEvents.sort((a, b) => a.start.localeCompare(b.start));
+                for (var j = 1; j <= 30; j++) {
+                    var dayStr = String(j).padStart(2, '0');
+                    var dateStr = "2026-06-" + dayStr;
+                    var dayEvents = events.filter(function(e) { return e.date === dateStr; });
+                    dayEvents.sort(function(a, b) { return a.start.localeCompare(b.start); });
 
-                    let eventsHtml = '';
-                    dayEvents.forEach(e => {
-                        let badgeStyle = "background-color: #f1f5f9; color: #475569; border-left: 2px solid #cbd5e1;";
+                    var eventsHtml = '';
+                    dayEvents.forEach(function(e) {
+                        var badgeStyle = "background-color: #f1f5f9; color: #475569; border-left: 2px solid #cbd5e1;";
                         if (e.type === 'ESTUDIO') badgeStyle = "background-color: #ddebf7; color: #1f4e79; border-left: 2px solid #9bc2e6;";
                         else if (e.type === 'TRABAJO') badgeStyle = "background-color: #fce4d6; color: #c65911; border-left: 2px solid #f4b183;";
                         else if (e.type === 'CASA') badgeStyle = "background-color: #e2f0d9; color: #385723; border-left: 2px solid #a9d18e;";
@@ -1228,7 +1242,7 @@
 
                     html += `
                         <div style="border: 1px solid #e2e8f0; background-color: #ffffff; padding: 6px; rounded: 8px; min-height: 85px;">
-                            <span style="font-weight: bold; color: #94a3b8; font-size: 9px;">${i}</span>
+                            <span style="font-weight: bold; color: #94a3b8; font-size: 9px;">${j}</span>
                             <div style="margin-top: 4px; display: flex; flex-direction: column; gap: 2px;">${eventsHtml}</div>
                         </div>
                     `;
@@ -1240,9 +1254,9 @@
             html2canvas(container, {
                 scale: 2,
                 useCORS: true
-            }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = `FamilySync_Agenda_${view === 'week' ? 'Semanal' : 'Mensual'}.png`;
+            }).then(function(canvas) {
+                var link = document.createElement('a');
+                link.download = "FamilySync_Agenda_" + (view === 'week' ? 'Semanal' : 'Mensual') + ".png";
                 link.href = canvas.toDataURL();
                 link.click();
                 container.classList.add('hidden');
@@ -1272,7 +1286,7 @@
         }
 
         function openEditEventModal(id) {
-            const event = events.find(e => e.id === id);
+            var event = events.find(function(e) { return e.id === id; });
             if (!event) return;
 
             editingEventId = id;
@@ -1293,39 +1307,42 @@
             editingEventId = null;
         }
 
-        async function saveEvent(e) {
+        function saveEvent(e) {
             e.preventDefault();
-            const title = document.getElementById('event-title').value;
-            const type = document.getElementById('event-type').value;
-            const date = document.getElementById('event-date').value;
-            const start = document.getElementById('event-start').value;
-            const duration = parseInt(document.getElementById('event-duration').value);
+            var title = document.getElementById('event-title').value;
+            var type = document.getElementById('event-type').value;
+            var date = document.getElementById('event-date').value;
+            var start = document.getElementById('event-start').value;
+            var duration = parseInt(document.getElementById('event-duration').value);
 
-            const payload = { title, type, date, start, duration };
+            var payload = { title: title, type: type, date: date, start: start, duration: duration };
 
             if (hasFirebase && user) {
-                const { collection, addDoc, doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
-                const eventsCol = collection(db, 'artifacts', appId, 'users', user.uid, 'events');
                 if (editingEventId) {
-                    const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'events', editingEventId);
-                    await updateDoc(docRef, payload);
-                    showToast("✅ Modificado en la Nube");
+                    db.collection('artifacts').doc(appId).collection('users').doc(user.uid).collection('events').doc(editingEventId)
+                      .update(payload)
+                      .then(function() {
+                          showToast("✅ Modificado en la Nube");
+                      });
                 } else {
-                    const docRef = await addDoc(eventsCol, payload);
-                    showToast("✅ Guardado en la Nube");
-                    if (isGoogleConnected) {
-                        pushEventToGoogle({ id: docRef.id, ...payload });
-                    }
+                    db.collection('artifacts').doc(appId).collection('users').doc(user.uid).collection('events')
+                      .add(payload)
+                      .then(function(docRef) {
+                          showToast("✅ Guardado en la Nube");
+                          if (isGoogleConnected) {
+                              pushEventToGoogle(Object.assign({ id: docRef.id }, payload));
+                          }
+                      });
                 }
             } else {
                 if (editingEventId) {
-                    const idx = events.findIndex(ev => ev.id === editingEventId);
+                    var idx = events.findIndex(function(ev) { return ev.id === editingEventId; });
                     if (idx !== -1) {
-                        events[idx] = { ...events[idx], title, type, date, start, duration };
+                        events[idx] = Object.assign({}, events[idx], payload);
                         showToast("✅ Modificado localmente");
                     }
                 } else {
-                    events.push({ id: "e_" + Date.now() + Math.random(), ...payload });
+                    events.push(Object.assign({ id: "e_" + Date.now() + Math.random() }, payload));
                     showToast("✅ Guardado localmente");
                 }
                 saveLocalEvents(events);
@@ -1335,14 +1352,15 @@
             closeAddEventModal();
         }
 
-        async function deleteEvent(id) {
+        function deleteEvent(id) {
             if (hasFirebase && user) {
-                const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
-                const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'events', id);
-                await deleteDoc(docRef);
-                showToast("🗑️ Eliminado de la Nube");
+                db.collection('artifacts').doc(appId).collection('users').doc(user.uid).collection('events').doc(id)
+                  .delete()
+                  .then(function() {
+                      showToast("🗑️ Eliminado de la Nube");
+                  });
             } else {
-                events = events.filter(e => e.id !== id);
+                events = events.filter(function(e) { return e.id !== id; });
                 saveLocalEvents(events);
                 showToast("🗑️ Eliminado localmente");
                 refreshAllViews();
@@ -1368,35 +1386,37 @@
         }
 
         function renderWeekNav() {
-            const currentWeek = weeks[currentWeekIndex];
+            var currentWeek = weeks[currentWeekIndex];
             document.getElementById('current-week-label').innerText = currentWeek.label;
             renderDaySelector();
             renderEvents();
         }
 
         function calculateEndTime(startStr, durationMin) {
-            const [hrs, mins] = startStr.split(':').map(Number);
-            let totalMins = hrs * 60 + mins + durationMin;
-            let endHrs = Math.floor(totalMins / 60) % 24;
-            let endMins = totalMins % 60;
-            return `${String(endHrs).padStart(2, '0')}:${String(endMins).padStart(2, '0')}`;
+            var parts = startStr.split(':').map(Number);
+            var hrs = parts[0];
+            var mins = parts[1];
+            var totalMins = hrs * 60 + mins + durationMin;
+            var endHrs = Math.floor(totalMins / 60) % 24;
+            var endMins = totalMins % 60;
+            return String(endHrs).padStart(2, '0') + ":" + String(endMins).padStart(2, '0');
         }
 
         function showToast(message) {
-            const container = document.getElementById('toast-container');
+            var container = document.getElementById('toast-container');
             if (!container) return;
-            const toast = document.createElement('div');
+            var toast = document.createElement('div');
             toast.className = "bg-white text-slate-800 border border-[#dfd5be] py-3.5 px-4 rounded-2xl text-xs font-bold shadow-xl flex items-center gap-2.5 transform translate-y-2 opacity-0 transition-all duration-300";
-            toast.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600"></i> ${message}`;
+            toast.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600"></i> ` + message;
             container.appendChild(toast);
-            setTimeout(() => { toast.classList.remove('translate-y-2', 'opacity-0'); }, 10);
-            setTimeout(() => {
+            setTimeout(function() { toast.classList.remove('translate-y-2', 'opacity-0'); }, 10);
+            setTimeout(function() {
                 toast.classList.add('translate-y-2', 'opacity-0');
-                setTimeout(() => { toast.remove(); }, 300);
+                setTimeout(function() { toast.remove(); }, 300);
             }, 3000);
         }
 
-        window.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', function() {
             checkAndInitFirebase();
             initGoogleOAuth();
             document.getElementById('gcal-connect-btn').addEventListener('click', connectToGoogle);
