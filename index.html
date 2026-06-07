@@ -17,7 +17,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
     <!-- Google Identity Services (GIS) para autenticación sin bloqueos -->
-    <script src="https://accounts.google.com/gsi/client" defer></script>
+    <script src="https://accounts.google.com/gsi/client" onload="window.initGoogleOAuth()" async defer></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
@@ -79,7 +79,7 @@
             
             <div class="flex items-center gap-2">
                 <!-- Botón de Sincronización Manual con Google Calendar -->
-                <button id="google-sync-now-btn" class="bg-[#f5eedf] hover:bg-[#eae3d2] text-slate-700 p-2.5 rounded-xl transition border border-[#dfd5be] shadow-sm hidden" title="Sincronizar Google Calendar">
+                <button id="google-sync-now-btn" onclick="window.syncWithGoogleCalendar()" class="bg-[#f5eedf] hover:bg-[#eae3d2] text-slate-700 p-2.5 rounded-xl transition border border-[#dfd5be] shadow-sm hidden" title="Sincronizar Google Calendar">
                     <i class="fa-solid fa-arrows-rotate text-sm"></i>
                 </button>
                 <!-- Botón de Exportación Premium -->
@@ -114,10 +114,10 @@
                 <button onclick="switchView('week')" id="tab-week" class="py-2.5 text-[10px] font-bold rounded-xl transition text-slate-600 hover:text-slate-900">
                     SEMANA
                 </button>
-                <button onclick="switchView('month')" id="tab-month" class="py-2.5 text-[10px] font-bold rounded-xl transition text-slate-600 hover:text-slate-900">
+                <button onclick="switchView('month')" id="tab-month" class="py-2.5 text-[10px] font-bold rounded-xl transition text-slate-600 hover:text-slate-950">
                     MES
                 </button>
-                <button onclick="switchView('stats')" id="tab-stats" class="py-2.5 text-[10px] font-bold rounded-xl transition text-slate-600 hover:text-slate-900">
+                <button onclick="switchView('stats')" id="tab-stats" class="py-2.5 text-[10px] font-bold rounded-xl transition text-slate-600 hover:text-slate-955">
                     CONEXIÓN
                 </button>
             </div>
@@ -206,7 +206,7 @@
                     </div>
                     <p class="leading-relaxed">Tu aplicación sigue utilizando la clave de prueba genérica. Para que la sincronización con tu cuenta real funcione, debes reemplazar el ID en tu archivo HTML de GitHub.</p>
                     <div class="bg-amber-100/50 p-2.5 rounded-xl font-mono text-[9px] text-amber-800 break-all border border-amber-200">
-                        Línea 601: let googleClientId = "tu-ID-de-google-cloud";
+                        Línea 588: let googleClientId = "tu-ID-de-google-cloud";
                     </div>
                 </div>
 
@@ -222,7 +222,8 @@
                     </div>
 
                     <div id="gcal-actions-container" class="space-y-3">
-                        <button id="gcal-connect-btn" class="w-full bg-[#1f4e79] hover:bg-[#1a4165] text-white font-bold text-xs py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-sm">
+                        <!-- El botón ahora ejecuta onclick nativo directamente, evitando fallos de registro -->
+                        <button id="gcal-connect-btn" onclick="window.connectToGoogle()" class="w-full bg-[#1f4e79] hover:bg-[#1a4165] text-white font-bold text-xs py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-sm">
                             <i class="fa-brands fa-google"></i> Conectar con Google Calendar
                         </button>
                         
@@ -485,7 +486,7 @@
         }
 
         // Gestión de persistencia local (Local Storage)
-        var LOCAL_STORAGE_KEY = 'familysync_local_events';
+        var LOCAL_STORAGE_KEY = 'familysync_local_events_v2';
         function getLocalEvents() {
             var data = localStorage.getItem(LOCAL_STORAGE_KEY);
             return data ? JSON.parse(data) : [];
@@ -494,27 +495,53 @@
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
         }
 
-        // Datos iniciales completos (UNIR, Trading y Terapias)
+        // Datos iniciales de tu Calendario Real Unificado (image_ba5825.jpg)
         function getInitialEventsArray() {
             return [
-                { id: "e1", title: "Procesos de Memoria, Hab. y TIC", type: "ESTUDIO", date: "2026-06-08", start: "07:00", duration: 105 },
-                { id: "e2", title: "Metodología Investigación", type: "ESTUDIO", date: "2026-06-08", start: "10:00", duration: 105 },
-                { id: "e3", title: "Procesos Neurolingüísticos", type: "ESTUDIO", date: "2026-06-10", start: "10:00", duration: 105 },
-                { id: "e4", title: "Niveles Táctiles y Motricidad", type: "ESTUDIO", date: "2026-06-10", start: "14:00", duration: 105 },
-                { id: "e5", title: "Metodología Investigación", type: "ESTUDIO", date: "2026-06-12", start: "07:00", duration: 105 },
-                { id: "e6", title: "Funcionalidad Visual y Auditiva", type: "ESTUDIO", date: "2026-06-16", start: "07:00", duration: 60 },
-                { id: "e7", title: "Procesos de Memoria, Hab. y TIC", type: "ESTUDIO", date: "2026-06-16", start: "11:00", duration: 60 },
-                { id: "e8", title: "Niveles Táctiles y Motricidad", type: "ESTUDIO", date: "2026-06-17", start: "10:00", duration: 60 },
-                { id: "e9", title: "Procesos Neurolingüísticos", type: "ESTUDIO", date: "2026-06-18", start: "07:00", duration: 60 },
-                { id: "e10", title: "Procesos de Memoria, Hab. y TIC", type: "ESTUDIO", date: "2026-06-18", start: "15:00", duration: 60 },
-                { id: "t1", title: "Terapias Individuales Katerine", type: "TRABAJO", date: "2026-06-08", start: "14:00", duration: 240 },
-                { id: "t2", title: "Terapias Individuales Katerine", type: "TRABAJO", date: "2026-06-15", start: "14:00", duration: 240 },
-                { id: "t3", title: "Terapias Individuales Katerine", type: "TRABAJO", date: "2026-06-22", start: "14:00", duration: 240 },
-                { id: "t4", title: "Terapias Individuales Katerine", type: "TRABAJO", date: "2026-06-29", start: "14:00", duration: 240 },
-                { id: "t5", title: "Terapias Individuales Katerine", type: "TRABAJO", date: "2026-06-09", start: "09:30", duration: 120 },
-                { id: "t6", title: "Terapias Individuales Katerine", type: "TRABAJO", date: "2026-06-16", start: "09:30", duration: 120 },
-                { id: "t7", title: "Terapias Individuales Katerine", type: "TRABAJO", date: "2026-06-23", start: "09:30", duration: 120 },
-                { id: "t8", title: "Terapias Individuales Katerine", type: "TRABAJO", date: "2026-06-30", start: "09:30", duration: 120 }
+                // --- LUNES ---
+                { id: "l1", title: "ESTUDIO UNIFICADO: UNIR Kat & Trading Alb", type: "ESTUDIO", date: "2026-06-08", start: "08:00", duration: 300 },
+                { id: "l2", title: "DISPONIBLE", type: "DISPONIBLE", date: "2026-06-08", start: "13:00", duration: 120 },
+                { id: "l3", title: "TERAPIAS KATERINE (Pacientes)", type: "TRABAJO", date: "2026-06-08", start: "15:00", duration: 240 },
+                { id: "l4", title: "DISPONIBLE", type: "DISPONIBLE", date: "2026-06-08", start: "19:00", duration: 90 },
+                { id: "l5", title: "ESTUDIO KATERINE (UNIR/Neurod./IA autón.)", type: "ESTUDIO", date: "2026-06-08", start: "20:30", duration: 90 },
+
+                // --- MARTES ---
+                { id: "m1", title: "DISPONIBLE", type: "DISPONIBLE", date: "2026-06-09", start: "08:00", duration: 60 },
+                { id: "m2", title: "TERAPIAS KATERINE (9:30 - 11:30 AM)", type: "TRABAJO", date: "2026-06-09", start: "09:30", duration: 120 },
+                { id: "m3", title: "DISPONIBLE", type: "DISPONIBLE", date: "2026-06-09", start: "11:30", duration: 210 },
+                { id: "m4", title: "TERAPIAS KATERINE (Pacientes)", type: "TRABAJO", date: "2026-06-09", start: "15:00", duration: 240 },
+                { id: "m5", title: "DISPONIBLE", type: "DISPONIBLE", date: "2026-06-09", start: "19:00", duration: 90 },
+                { id: "m6", title: "ESTUDIO KATERINE (UNIR/Neurod./IA autón.)", type: "ESTUDIO", date: "2026-06-09", start: "20:30", duration: 90 },
+
+                // --- MIÉRCOLES ---
+                { id: "mi1", title: "ESTUDIO UNIFICADO: UNIR Kat & Trading Alb", type: "ESTUDIO", date: "2026-06-10", start: "08:00", duration: 300 },
+                { id: "mi2", title: "DISPONIBLE", type: "DISPONIBLE", date: "2026-06-10", start: "13:00", duration: 120 },
+                { id: "mi3", title: "TERAPIAS KATERINE (Pacientes)", type: "TRABAJO", date: "2026-06-10", start: "15:00", duration: 240 },
+                { id: "mi4", title: "DISPONIBLE", type: "DISPONIBLE", date: "2026-06-10", start: "19:00", duration: 90 },
+                { id: "mi5", title: "ESTUDIO KATERINE (UNIR/Neurod./IA autón.)", type: "ESTUDIO", date: "2026-06-10", start: "20:30", duration: 90 },
+
+                // --- JUEVES ---
+                { id: "j1", title: "ESTUDIO KATERINE (UNIR/IA aut./Neuro)", type: "ESTUDIO", date: "2026-06-11", start: "08:00", duration: 300 },
+                { id: "j2", title: "DISPONIBLE", type: "DISPONIBLE", date: "2026-06-11", start: "13:00", duration: 120 },
+                { id: "j3", title: "ESTUDIO KATERINE (UNIR/IA aut./Neuro)", type: "ESTUDIO", date: "2026-06-11", start: "15:00", duration: 240 },
+                { id: "j4", title: "DISPONIBLE", type: "DISPONIBLE", date: "2026-06-11", start: "19:00", duration: 90 },
+                { id: "j5", title: "ESTUDIO KATERINE (UNIR/IA aut./Neuro)", type: "ESTUDIO", date: "2026-06-11", start: "20:30", duration: 90 },
+
+                // --- VIERNES ---
+                { id: "v1", title: "ESTUDIO KATERINE (UNIR/Neurod./IA autón.)", type: "ESTUDIO", date: "2026-06-12", start: "08:00", duration: 120 },
+                { id: "v2", title: "TERAPIAS KATERINE (10:00 - 11:00 AM)", type: "TRABAJO", date: "2026-06-12", start: "10:00", duration: 60 },
+                { id: "v3", title: "DISPONIBLE", type: "DISPONIBLE", date: "2026-06-12", start: "11:00", duration: 240 },
+                { id: "v4", title: "TERAPIAS KATERINE (Pacientes)", type: "TRABAJO", date: "2026-06-12", start: "15:00", duration: 240 },
+                { id: "v5", title: "DISPONIBLE", type: "DISPONIBLE", date: "2026-06-12", start: "19:00", duration: 90 },
+                { id: "v6", title: "ESTUDIO KATERINE (UNIR/Neurod./IA autón.)", type: "ESTUDIO", date: "2026-06-12", start: "20:30", duration: 90 },
+
+                // --- SÁBADO ---
+                { id: "s1", title: "TERAPIAS KATERINE (8:00 AM - 12:00 PM)", type: "TRABAJO", date: "2026-06-13", start: "08:00", duration: 240 },
+                { id: "s2", title: "DISPONIBLE", type: "DISPONIBLE", date: "2026-06-13", start: "12:00", duration: 60 },
+                { id: "s3", title: "ESTUDIO KATERINE (UNIR/IA aut./Neuro)", type: "ESTUDIO", date: "2026-06-13", start: "13:00", duration: 240 },
+                { id: "s4", title: "DISPONIBLE: Tiempo Libre & Transiciones", type: "DISPONIBLE", date: "2026-06-13", start: "17:00", duration: 120 },
+                { id: "s5", title: "ESTUDIO KATERINE (UNIR/IA aut./Neuro)", type: "ESTUDIO", date: "2026-06-13", start: "19:00", duration: 90 },
+                { id: "s6", title: "ESTUDIO KATERINE (UNIR/IA aut./Neuro)", type: "ESTUDIO", date: "2026-06-13", start: "20:30", duration: 90 }
             ];
         }
 
@@ -534,7 +561,7 @@
             if (events.length === 0) {
                 events = getInitialEventsArray();
                 saveLocalEvents(events);
-                logDebug("Cargados 18 eventos predefinidos de la UNIR y Terapias.");
+                logDebug("Cargados los eventos unificados de tu agenda física real.");
             }
             refreshAllViews();
         }
@@ -546,7 +573,7 @@
                 if (configString && typeof firebase !== 'undefined') {
                     var firebaseConfig = JSON.parse(configString);
                     if (firebaseConfig && firebaseConfig.apiKey) {
-                        logDebug("Cargando módulos de base de datos en la nube de Firebase...");
+                        logDebug("Cargando base de datos familiar remota...");
                         
                         firebase.initializeApp(firebaseConfig);
                         auth = firebase.auth();
@@ -787,11 +814,11 @@
             document.getElementById('view-stats').classList.add('hidden');
 
             ['day', 'week', 'month', 'stats'].forEach(function(t) {
-                document.getElementById("tab-" + t).className = "py-2.5 text-[10px] font-bold rounded-xl transition text-slate-500 hover:text-slate-950";
+                document.getElementById("tab-" + t).className = "py-2.5 text-[10px] font-bold rounded-xl transition text-slate-500 hover:text-slate-955";
             });
 
             document.getElementById("view-" + view).classList.remove('hidden');
-            document.getElementById("tab-" + view).className = "py-2.5 text-[10px] font-bold rounded-xl transition bg-[#f5eedf] text-slate-950 shadow-sm border border-[#dfd5be]/60";
+            document.getElementById("tab-" + view).className = "py-2.5 text-[10px] font-bold rounded-xl transition bg-[#f5eedf] text-slate-955 shadow-sm border border-[#dfd5be]/60";
 
             if (view === 'day') renderEvents();
             else if (view === 'week') renderWeeklyGrid();
@@ -802,6 +829,7 @@
             else if (view === 'stats') calculateStatistics();
         }
 
+        // Navegación semanal básica
         function prevWeek() {
             if (currentWeekIndex > 0) {
                 currentWeekIndex--;
@@ -962,10 +990,11 @@
                         if (activeEvent.type === 'ESTUDIO') cellColor = "bg-[#ddebf7] text-[#1f4e79] border border-[#9bc2e6]";
                         else if (activeEvent.type === 'TRABAJO') cellColor = "bg-[#fce4d6] text-[#c65911] border border-[#f4b183]";
                         else if (activeEvent.type === 'CASA') cellColor = "bg-[#e2f0d9] text-[#385723] border border-[#a9d18e]";
+                        else if (activeEvent.type === 'DISPONIBLE') cellColor = "bg-amber-100 text-amber-800 border border-amber-200";
 
                         cellContent = `
                             <td class="p-0.5 text-center">
-                                <div onclick="openEditEventModal('${activeEvent.id}')" class="${cellColor} rounded-lg py-2 font-bold uppercase text-[8px] shadow-sm truncate max-w-[95px] px-0.5 cursor-pointer hover:opacity-80 transition" title="${activeEvent.title}">
+                                <div onclick="openEditEventModal('${activeEvent.id}')" class="${cellColor} rounded-lg py-2 font-bold uppercase text-[7.5px] shadow-sm truncate max-w-[95px] px-0.5 cursor-pointer hover:opacity-80 transition" title="${activeEvent.title}">
                                     ${activeEvent.title.split(' ')[0]}
                                 </div>
                             </td>
@@ -1028,6 +1057,7 @@
                         if (e.type === 'ESTUDIO') c = "bg-[#ddebf7] text-[#1f4e79] border border-[#9bc2e6]";
                         else if (e.type === 'TRABAJO') c = "bg-[#fce4d6] text-[#c65911] border border-[#f4b183]";
                         else if (e.type === 'CASA') c = "bg-[#e2f0d9] text-[#385723] border border-[#a9d18e]";
+                        else if (e.type === 'DISPONIBLE') c = "bg-amber-100 text-amber-800 border border-amber-200";
 
                         textBlocksList += `
                             <div onclick="event.stopPropagation(); openEditEventModal('${e.id}')" class="text-[7.5px] font-bold truncate leading-none py-1 px-1 rounded border overflow-hidden whitespace-nowrap block cursor-pointer hover:opacity-85 transition ${c}" title="${e.title}">
@@ -1088,6 +1118,7 @@
                 if (e.type === 'ESTUDIO') badgeColor = "bg-[#ddebf7] text-[#1f4e79] border border-[#9bc2e6]";
                 else if (e.type === 'TRABAJO') badgeColor = "bg-[#fce4d6] text-[#c65911] border border-[#f4b183]";
                 else if (e.type === 'CASA') badgeColor = "bg-[#e2f0d9] text-[#385723] border border-[#a9d18e]";
+                else if (e.type === 'DISPONIBLE') badgeColor = "bg-amber-100 text-amber-800 border border-amber-200";
 
                 var endTime = calculateEndTime(e.start, e.duration);
                 listContainer.innerHTML += `
@@ -1110,11 +1141,11 @@
             if (!container) return;
             container.innerHTML = '';
 
-            var mins = { ESTUDIO: 0, TRABAJO: 0, CASA: 0 };
+            var mins = { ESTUDIO: 0, TRABAJO: 0, CASA: 0, DISPONIBLE: 0 };
             events.forEach(function(e) { if (mins[e.type] !== undefined) mins[e.type] += e.duration; });
 
-            var colors = { ESTUDIO: "bg-[#1f4e79]", TRABAJO: "bg-[#c65911]", CASA: "bg-[#385723]" };
-            var labels = { ESTUDIO: "Estudio UNIR / Trading", TRABAJO: "Terapias Katerine", CASA: "Hogar y Logística" };
+            var colors = { ESTUDIO: "bg-[#1f4e79]", TRABAJO: "bg-[#c65911]", CASA: "bg-[#385723]", DISPONIBLE: "bg-amber-500" };
+            var labels = { ESTUDIO: "Estudio UNIR / Trading", TRABAJO: "Terapias Katerine", CASA: "Hogar y Logística", DISPONIBLE: "Tiempo Libre / Disponible" };
 
             Object.keys(mins).forEach(function(key) {
                 var hrs = (mins[key] / 60).toFixed(1);
@@ -1174,6 +1205,7 @@
                             if (activeEvent.type === 'ESTUDIO') cellStyle = "background-color: #ddebf7; color: #1f4e79; font-weight: bold; border: 1px solid #9bc2e6;";
                             else if (activeEvent.type === 'TRABAJO') cellStyle = "background-color: #fce4d6; color: #c65911; font-weight: bold; border: 1px solid #f4b183;";
                             else if (activeEvent.type === 'CASA') cellStyle = "background-color: #e2f0d9; color: #385723; font-weight: bold; border: 1px solid #a9d18e;";
+                            else if (activeEvent.type === 'DISPONIBLE') cellStyle = "background-color: #fef3c7; color: #92400e; font-weight: bold; border: 1px solid #fde68a;";
 
                             rowCells += `
                                 <td style="padding: 4px; border-bottom: 1px solid #e2e8f0;">
@@ -1232,6 +1264,7 @@
                         if (e.type === 'ESTUDIO') badgeStyle = "background-color: #ddebf7; color: #1f4e79; border-left: 2px solid #9bc2e6;";
                         else if (e.type === 'TRABAJO') badgeStyle = "background-color: #fce4d6; color: #c65911; border-left: 2px solid #f4b183;";
                         else if (e.type === 'CASA') badgeStyle = "background-color: #e2f0d9; color: #385723; border-left: 2px solid #a9d18e;";
+                        else if (e.type === 'DISPONIBLE') badgeStyle = "background-color: #fef3c7; color: #92400e; border-left: 2px solid #fde68a;";
 
                         eventsHtml += `
                             <div style="font-size: 7.5px; padding: 2px 3px; margin-top: 2.5px; border-radius: 4px; font-weight: bold; ${badgeStyle} overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
@@ -1275,6 +1308,7 @@
             document.getElementById('add-event-modal').classList.remove('hidden');
         }
 
+        // Modales de interacción
         function openAddEventModal() {
             editingEventId = null;
             document.getElementById('modal-title').innerText = "Nueva Actividad";
@@ -1402,6 +1436,7 @@
             return String(endHrs).padStart(2, '0') + ":" + String(endMins).padStart(2, '0');
         }
 
+        // Sistema unificado de Toasts/Avisos flotantes
         function showToast(message) {
             var container = document.getElementById('toast-container');
             if (!container) return;
@@ -1416,16 +1451,23 @@
             }, 3000);
         }
 
-        window.addEventListener('DOMContentLoaded', function() {
+        // Función Maestra de Inicialización sin fallos de carrera
+        function initApp() {
+            logDebug("Iniciando componentes principales...");
             checkAndInitFirebase();
             initGoogleOAuth();
-            document.getElementById('gcal-connect-btn').addEventListener('click', connectToGoogle);
-            document.getElementById('google-sync-now-btn').addEventListener('click', syncWithGoogleCalendar);
             renderWeekNav();
             renderWeeklyGrid();
             renderMonthlyGrid();
             showDayDetailsInMonth(selectedDate);
-        });
+        }
+
+        // Comprobación de estado de carga para compatibilidad móvil del 100%
+        if (document.readyState === "complete" || document.readyState === "interactive") {
+            initApp();
+        } else {
+            window.addEventListener('DOMContentLoaded', initApp);
+        }
     </script>
 </body>
 </html>
