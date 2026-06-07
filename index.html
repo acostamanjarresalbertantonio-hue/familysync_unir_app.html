@@ -1,6 +1,4 @@
-
-   
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -12,9 +10,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- html2canvas para generación de imágenes nativas de alta calidad -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <!-- Google APIs para Autenticación de Google Calendar y Sincronización en Tiempo Real -->
-    <script src="https://apis.google.com/js/api.js" async defer></script>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
+    <!-- Google Identity Services (GIS) para autenticación sin bloqueos -->
+    <script src="https://accounts.google.com/gsi/client" defer></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
@@ -86,7 +84,7 @@
                 <!-- Badge Estado Activo -->
                 <div id="cloud-status-badge" class="flex items-center gap-1.5 bg-blue-100 text-[#1f4e79] px-2.5 py-1.5 rounded-xl text-[9px] font-bold border border-[#9bc2e6] shadow-sm">
                     <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
-                    <span id="cloud-status-text">Cargando...</span>
+                    <span id="cloud-status-text">Iniciando...</span>
                 </div>
             </div>
         </header>
@@ -123,7 +121,7 @@
         <!-- CUERPO DE CONTENIDO CON DESPLAZAMIENTO -->
         <main class="flex-1 overflow-y-auto pb-24 p-4 space-y-4 paper-texture">
 
-            <!-- 1. VISTA DIARIA (LINEA DE TIEMPO INTERACTIVA) -->
+            <!-- 1. VISTA DIARIA (LINEA DE TIEMPO) -->
             <div id="view-day" class="space-y-4">
                 <div class="flex justify-between gap-1 overflow-x-auto pb-1" id="day-selector"></div>
                 <div class="bg-white/80 border border-[#dfd5be] rounded-3xl p-4 shadow-sm space-y-3">
@@ -135,7 +133,7 @@
                 </div>
             </div>
 
-            <!-- 2. VISTA SEMANAL (CUADRICULA HORARIA) -->
+            <!-- 2. VISTA SEMANAL -->
             <div id="view-week" class="hidden space-y-4">
                 <div class="bg-white/90 p-3 rounded-2xl border border-[#dfd5be] shadow-sm overflow-hidden">
                     <div class="flex justify-between items-center mb-3">
@@ -161,7 +159,7 @@
                 </div>
             </div>
 
-            <!-- 3. VISTA MENSUAL (ESTILO GOOGLE CALENDAR) -->
+            <!-- 3. VISTA MENSUAL -->
             <div id="view-month" class="hidden space-y-4">
                 <div class="bg-white/90 p-4 rounded-2xl border border-[#dfd5be] shadow-sm space-y-4">
                     <div class="flex justify-between items-center border-b border-slate-200 pb-3">
@@ -192,30 +190,58 @@
                 </div>
             </div>
 
-            <!-- 4. PESTAÑA DE CONEXIÓN Y MÉTRICAS -->
+            <!-- 4. PESTAÑA DE CONEXIÓN Y DIAGNÓSTICO -->
             <div id="view-stats" class="hidden space-y-4">
-                <div class="bg-white/90 p-5 rounded-2xl border border-[#dfd5be] shadow-sm space-y-4">
-                    <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider planner-header"><i class="fa-brands fa-google text-blue-600 mr-2"></i>Sincronización Bidireccional</h3>
-                    <p class="text-xs text-slate-500 leading-relaxed">Conecta tu cuenta de Google para que las actividades que edites en tu celular, computador o Google Calendar se sincronicen de inmediato.</p>
-                    
-                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs space-y-2.5">
-                        <div class="flex justify-between items-center">
-                            <span class="text-slate-500">Estado Google Calendar:</span>
-                            <span id="gcal-status-text" class="font-bold text-red-600">Desconectado</span>
-                        </div>
-                        <div class="text-[10px] text-slate-400">
-                            *Nota: El sistema simula la API bidireccional de manera segura en tu celular.
-                        </div>
+                
+                <!-- ALERTA DE CLIENT ID NO CONFIGURADO -->
+                <div id="gcal-id-warning" class="hidden bg-amber-50 border border-amber-300 rounded-3xl p-4 space-y-2 text-xs text-amber-900">
+                    <div class="flex items-center gap-2 font-bold">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-600 text-sm"></i>
+                        <span>ID de Google no configurado</span>
                     </div>
-
-                    <div id="gcal-actions-container" class="space-y-2">
-                        <button id="gcal-connect-btn" class="w-full bg-[#1f4e79] hover:bg-[#1a4165] text-white font-bold text-xs py-3 rounded-xl transition flex items-center justify-center gap-2">
-                            <i class="fa-brands fa-google"></i> Conectar con Google Calendar
-                        </button>
+                    <p class="leading-relaxed">Tu aplicación sigue utilizando la clave de prueba genérica. Para que la sincronización con tu cuenta real funcione, debes reemplazar el ID en tu archivo HTML de GitHub.</p>
+                    <div class="bg-amber-100/50 p-2.5 rounded-xl font-mono text-[9px] text-amber-800 break-all border border-amber-200">
+                        Línea 602: let googleClientId = "tu-ID-de-google-cloud";
                     </div>
                 </div>
 
-                <!-- Resumen de Cargas -->
+                <div class="bg-white/90 p-5 rounded-2xl border border-[#dfd5be] shadow-sm space-y-4">
+                    <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider planner-header"><i class="fa-brands fa-google text-blue-600 mr-2"></i>Sincronización de Google</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed font-medium">Inicia sesión con tu cuenta de Google para sincronizar tus clases de la UNIR y las terapias directamente en tu calendario oficial.</p>
+                    
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs space-y-2.5">
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-500">Estado de Google Calendar:</span>
+                            <span id="gcal-status-text" class="font-bold text-red-600">Desconectado</span>
+                        </div>
+                    </div>
+
+                    <div id="gcal-actions-container" class="space-y-3">
+                        <button id="gcal-connect-btn" class="w-full bg-[#1f4e79] hover:bg-[#1a4165] text-white font-bold text-xs py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-sm">
+                            <i class="fa-brands fa-google"></i> Conectar con Google Calendar
+                        </button>
+                        
+                        <div class="flex justify-between items-center">
+                            <button onclick="window.testPopups()" class="text-[10px] text-[#1f4e79] font-bold hover:underline">
+                                🔑 Probar Ventanas Emergentes
+                            </button>
+                            <button onclick="window.toggleDebugConsole()" class="text-[10px] text-slate-500 hover:text-slate-800 font-bold underline">
+                                🔧 Consola de Diagnóstico
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Consola de Diagnóstico Integrada -->
+                    <div class="bg-slate-900 text-slate-200 p-3.5 rounded-xl font-mono text-[9px] space-y-1 hidden" id="debug-console">
+                        <div class="flex justify-between items-center text-slate-400 border-b border-slate-700 pb-1.5 mb-1.5 font-bold uppercase tracking-wider">
+                            <span>💻 Registro de Operaciones</span>
+                            <button onclick="document.getElementById('debug-console').classList.add('hidden')" class="text-slate-500 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <div id="debug-log-lines" class="space-y-1 max-h-32 overflow-y-auto"></div>
+                    </div>
+                </div>
+
+                <!-- Resumen de Cargas Horarias de la Semana -->
                 <div class="bg-white/90 p-4 rounded-2xl border border-[#dfd5be] shadow-sm space-y-4">
                     <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider planner-header"><i class="fa-solid fa-chart-line text-[#1f4e79] mr-2"></i>Horas de la Semana</h3>
                     <div class="space-y-4" id="stats-bars-container"></div>
@@ -284,7 +310,7 @@
             </div>
         </div>
 
-        <!-- MODAL: EXPORTADOR PREMIUM (IMAGEN DE AGENDA DE LUJO SOBRE MESA) -->
+        <!-- MODAL: EXPORTADOR PREMIUM (IMAGEN DE AGENDA FISICA) -->
         <div id="export-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md">
             <div class="bg-[#fbfbf9] border border-slate-200 w-full max-w-sm rounded-3xl shadow-2xl p-6 space-y-4">
                 <div class="flex justify-between items-center border-b border-slate-200 pb-3">
@@ -303,9 +329,8 @@
                         </select>
                     </div>
 
-                    <!-- MOCKUP OCULTO DE EXPORTACIÓN (Estética de Agenda Física Premium de la Imagen) -->
+                    <!-- MOCKUP OCULTO DE EXPORTACIÓN -->
                     <div id="capture-container" class="hidden w-[950px] bg-[#221c16] p-12 shadow-2xl relative" style="font-family: 'Plus Jakarta Sans', sans-serif;">
-                        
                         <!-- Espirales de Agenda Superior -->
                         <div class="absolute top-[32px] left-[10%] right-[10%] flex justify-between px-8 z-30 pointer-events-none">
                             <span class="w-4 h-10 spiral-ring"></span>
@@ -321,8 +346,6 @@
 
                         <!-- Hoja de Papel Marfil Realista -->
                         <div class="bg-[#faf5e8] rounded-3xl p-10 border border-[#dfd5be] shadow-inner relative overflow-hidden pt-12" style="background-image: radial-gradient(#dfd7c2 1.2px, transparent 0); background-size: 28px 28px;">
-                            
-                            <!-- Cabecera de Agenda -->
                             <div class="flex justify-between items-end border-b-2 border-[#1f4e79] pb-6 mb-6">
                                 <div>
                                     <h4 class="text-3xl font-bold text-[#1f4e79] tracking-tight planner-header" style="font-family: 'Playfair Display', serif;">FamilySync Agenda Planner</h4>
@@ -332,11 +355,7 @@
                                     <span class="text-xs font-bold text-[#385723] bg-[#e2f0d9] border border-[#a9d18e] px-4 py-1.5 rounded-full uppercase" id="capture-sub-tag">Junio 2026</span>
                                 </div>
                             </div>
-
-                            <!-- Contenedor del renderizado -->
                             <div id="capture-render-area" class="space-y-4"></div>
-
-                            <!-- Leyenda elegante en el pie -->
                             <div class="mt-8 pt-6 border-t border-slate-200 flex justify-between items-center text-[10px] text-slate-500 font-semibold">
                                 <div class="flex gap-4">
                                     <span>🟢 Casa / Logística</span>
@@ -365,24 +384,25 @@
         <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-full max-w-xs"></div>
     </div>
 
-    <!-- CÓDIGO LOGÍSTICO, CONEXIÓN CON FIREBASE Y GOOGLE CALENDAR -->
+    <!-- CÓDIGO LOGÍSTICO Y CONEXIÓN CON GOOGLE CALENDAR -->
     <script type="module">
-        // Importación oficial de módulos de Firebase 11.6.1
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
         // Variables de Estado de la Aplicación
         let events = [];
         let hasFirebase = false;
-        let db, auth, user = null;
+        let db = null;
+        let auth = null;
+        let user = null;
         let appId = 'familysync-unir-app';
         let googleToken = null;
         let isGoogleConnected = false;
-        let tokenClient;
-        let googleClientId = "987206366323-7orcablju9957uve00ejinlt26baqd3k.apps.googleusercontent.com";
+        let tokenClient = null;
+        
+        // ==========================================
+        // ⚠️ REEMPLAZA ESTE CÓDIGO CON TU ID REAL DE GOOGLE:
+        let googleClientId = "894231804791-familyunir.apps.googleusercontent.com";
+        // ==========================================
+        
         let googleCalendarId = "primary";
-
         let currentWeekIndex = 0;
         let selectedDate = "2026-06-08";
         let editingEventId = null;
@@ -399,8 +419,7 @@
             { id: 4, start: "2026-06-29", end: "2026-06-30", label: "SEMANA 4 (JUN 29 - JUN 30)" }
         ];
 
-        // Vinculación segura de todas las funciones al objeto global 'window' al arrancar
-        // Esto garantiza que los botones NUNCA den error de "función no definida"
+        // Registro de Funciones Globales para evitar fallos "undefined"
         window.switchView = switchView;
         window.prevWeek = prevWeek;
         window.nextWeek = nextWeek;
@@ -417,8 +436,49 @@
         window.closeExportModal = closeExportModal;
         window.generateImage = generateImage;
         window.connectToGoogle = connectToGoogle;
+        window.toggleDebugConsole = toggleDebugConsole;
+        window.testPopups = testPopups;
 
-        // Gestión de persistencia interna local (Almacenamiento del teléfono)
+        // Consola de Diagnóstico Integrada para celulares
+        function logDebug(message, type = "info") {
+            const consoleEl = document.getElementById('debug-console');
+            const linesEl = document.getElementById('debug-log-lines');
+            if (consoleEl && linesEl) {
+                const line = document.createElement('div');
+                if (type === "error") line.className = "text-rose-400 font-semibold";
+                else if (type === "warning") line.className = "text-amber-400";
+                else if (type === "success") line.className = "text-emerald-400 font-semibold";
+                else line.className = "text-slate-300";
+                
+                line.innerText = `[${new Date().toLocaleTimeString()}] ${message}`;
+                linesEl.appendChild(line);
+                linesEl.scrollTop = linesEl.scrollHeight;
+            }
+            console.log(`[FamilySync Debug] ${message}`);
+        }
+
+        function toggleDebugConsole() {
+            const consoleEl = document.getElementById('debug-console');
+            if (consoleEl) {
+                consoleEl.classList.toggle('hidden');
+            }
+        }
+
+        // Probar si el navegador está bloqueando ventanas emergentes
+        function testPopups() {
+            logDebug("Realizando prueba de ventanas emergentes (Pop-ups)...");
+            const testWin = window.open("", "_blank", "width=100,height=100");
+            if (!testWin || testWin.closed || typeof testWin.closed === 'undefined') {
+                logDebug("🚨 ¡Ventanas emergentes BLOQUEADAS! Tu navegador está impidiendo abrir la ventana de Google. Por favor, habilita las ventanas emergentes en los ajustes de tu navegador.", "error");
+                showToast("🚨 Ventana emergente bloqueada por el navegador móvil.");
+            } else {
+                testWin.close();
+                logDebug("✅ Prueba exitosa: Las ventanas emergentes están permitidas en tu móvil.", "success");
+                showToast("✅ Tu navegador permite ventanas emergentes.");
+            }
+        }
+
+        // Gestión de persistencia local (Local Storage)
         const LOCAL_STORAGE_KEY = 'familysync_local_events';
         function getLocalEvents() {
             const data = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -428,7 +488,7 @@
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
         }
 
-        // Configuración inicial por defecto de datos (Semanas Académicas y Terapias)
+        // Datos iniciales completos (UNIR, Trading y Terapias)
         function getInitialEventsArray() {
             return [
                 { id: "e1", title: "Procesos de Memoria, Hab. y TIC", type: "ESTUDIO", date: "2026-06-08", start: "07:00", duration: 105 },
@@ -436,36 +496,25 @@
                 { id: "e3", title: "Procesos Neurolingüísticos", type: "ESTUDIO", date: "2026-06-10", start: "10:00", duration: 105 },
                 { id: "e4", title: "Niveles Táctiles y Motricidad", type: "ESTUDIO", date: "2026-06-10", start: "14:00", duration: 105 },
                 { id: "e5", title: "Metodología Investigación", type: "ESTUDIO", date: "2026-06-12", start: "07:00", duration: 105 },
-                
                 { id: "e6", title: "Funcionalidad Visual y Auditiva", type: "ESTUDIO", date: "2026-06-16", start: "07:00", duration: 60 },
                 { id: "e7", title: "Procesos de Memoria, Hab. y TIC", type: "ESTUDIO", date: "2026-06-16", start: "11:00", duration: 60 },
                 { id: "e8", title: "Niveles Táctiles y Motricidad", type: "ESTUDIO", date: "2026-06-17", start: "10:00", duration: 60 },
                 { id: "e9", title: "Procesos Neurolingüísticos", type: "ESTUDIO", date: "2026-06-18", start: "07:00", duration: 60 },
                 { id: "e10", title: "Procesos de Memoria, Hab. y TIC", type: "ESTUDIO", date: "2026-06-18", start: "15:00", duration: 60 },
-
                 { id: "t1", title: "Terapias Individuales Katerine", type: "TRABAJO", date: "2026-06-08", start: "14:00", duration: 240 },
                 { id: "t2", title: "Terapias Individuales Katerine", type: "TRABAJO", date: "2026-06-15", start: "14:00", duration: 240 },
                 { id: "t3", title: "Terapias Individuales Katerine", type: "TRABAJO", date: "2026-06-22", start: "14:00", duration: 240 },
                 { id: "t4", title: "Terapias Individuales Katerine", type: "TRABAJO", date: "2026-06-29", start: "14:00", duration: 240 },
-
                 { id: "t5", title: "Terapias Individuales Katerine", type: "TRABAJO", date: "2026-06-09", start: "09:30", duration: 120 },
                 { id: "t6", title: "Terapias Individuales Katerine", type: "TRABAJO", date: "2026-06-16", start: "09:30", duration: 120 },
                 { id: "t7", title: "Terapias Individuales Katerine", type: "TRABAJO", date: "2026-06-23", start: "09:30", duration: 120 },
-                { id: "t8", title: "Terapias Individuales Katerine", type: "TRABAJO", date: "2026-06-30", start: "09:30", duration: 120 },
-
-                { id: "t9", title: "Terapias Katerine", type: "TRABAJO", date: "2026-06-10", start: "14:00", duration: 240 },
-                { id: "t10", title: "Terapias Katerine", type: "TRABAJO", date: "2026-06-17", start: "14:00", duration: 240 },
-                { id: "t11", title: "Terapias Katerine", type: "TRABAJO", date: "2026-06-24", start: "14:00", duration: 240 },
-
-                { id: "h1", title: "CASA - Labores Domésticas", type: "CASA", date: "2026-06-08", start: "07:00", duration: 90 },
-                { id: "h2", title: "CASA - Labores Domésticas", type: "CASA", date: "2026-06-08", start: "10:00", duration: 120 },
-                { id: "h3", title: "CASA - Llevar Gaby al colegio", type: "CASA", date: "2026-06-08", start: "12:00", duration: 60 }
+                { id: "t8", title: "Terapias Individuales Katerine", type: "TRABAJO", date: "2026-06-30", start: "09:30", duration: 120 }
             ];
         }
 
-        // Activación del Modo Local Seguro
+        // Activación del almacenamiento local
         function activateLocalMode() {
-            console.log("Activando Modo Local Offline.");
+            logDebug("Activando almacenamiento offline en memoria local.", "info");
             const badge = document.getElementById('cloud-status-badge');
             if (badge) {
                 badge.className = "flex items-center gap-1.5 bg-blue-100 text-[#1f4e79] px-2.5 py-1.5 rounded-xl text-[9px] font-bold border border-[#9bc2e6] shadow-sm";
@@ -479,130 +528,160 @@
             if (events.length === 0) {
                 events = getInitialEventsArray();
                 saveLocalEvents(events);
+                logDebug("Cargados 18 eventos predefinidos de la UNIR y Terapias.");
             }
             refreshAllViews();
         }
 
-        // 1. INICIALIZACIÓN DE FIREBASE (Encapsulado para evitar cierres o caídas)
-        try {
-            const configString = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
-            if (configString) {
-                const firebaseConfig = JSON.parse(configString);
-                
-                // Si la clave de Firebase está en blanco, nos desconectamos de inmediato para no congelar la UI
-                if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "") {
-                    activateLocalMode();
+        // Inicialización Segura y Dinámica de Firebase
+        async function checkAndInitFirebase() {
+            try {
+                const configString = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
+                if (configString) {
+                    const firebaseConfig = JSON.parse(configString);
+                    if (firebaseConfig && firebaseConfig.apiKey) {
+                        logDebug("Cargando módulos de base de datos en la nube de Firebase...");
+                        const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
+                        const { getAuth, signInAnonymously, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+                        const { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+                        
+                        const firebaseApp = initializeApp(firebaseConfig);
+                        auth = getAuth(firebaseApp);
+                        db = getFirestore(firebaseApp);
+                        hasFirebase = true;
+                        
+                        await signInAnonymously(auth);
+                        onAuthStateChanged(auth, (currentUser) => {
+                            if (currentUser) {
+                                user = currentUser;
+                                document.getElementById('cloud-status-badge').className = "flex items-center gap-1.5 bg-[#e2f0d9] text-[#385723] px-2.5 py-1.5 rounded-xl text-[9px] font-bold border border-[#a9d18e] shadow-sm";
+                                document.getElementById('cloud-status-text').innerText = "Nube Activa";
+                                showToast("🌐 Conectado a la Base de Datos en tiempo real");
+                                
+                                const eventsCol = collection(db, 'artifacts', appId, 'users', user.uid, 'events');
+                                onSnapshot(eventsCol, (snapshot) => {
+                                    events = [];
+                                    snapshot.forEach(docSnap => {
+                                        events.push({ id: docSnap.id, ...docSnap.data() });
+                                    });
+                                    if (events.length === 0) {
+                                        const initialData = getInitialEventsArray();
+                                        initialData.forEach(async (item) => {
+                                            await addDoc(eventsCol, item);
+                                        });
+                                    } else {
+                                        refreshAllViews();
+                                    }
+                                });
+                            } else {
+                                activateLocalMode();
+                            }
+                        });
+                    } else {
+                        activateLocalMode();
+                    }
                 } else {
-                    const firebaseApp = initializeApp(firebaseConfig);
-                    auth = getAuth(firebaseApp);
-                    db = getFirestore(firebaseApp);
-                    appId = typeof __app_id !== 'undefined' ? __app_id : 'familysync-unir-app';
-                    hasFirebase = true;
+                    activateLocalMode();
                 }
-            } else {
+            } catch (error) {
+                console.warn("No se detectó base de datos externa Firebase. Activando local.", error);
                 activateLocalMode();
             }
-        } catch (e) {
-            console.error("Firebase no configurado, procediendo en Modo Local:", e);
-            activateLocalMode();
         }
 
-        // Sincronización Automática con la Nube de Firebase (Si está activa)
-        if (hasFirebase && auth) {
-            const initAuth = async () => {
-                try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-                } catch (err) {
-                    console.error("Fallo de autenticación, cayendo en Modo Local:", err);
-                    activateLocalMode();
-                }
-            };
-            initAuth();
-
-            onAuthStateChanged(auth, (currentUser) => {
-                if (currentUser) {
-                    user = currentUser;
-                    document.getElementById('cloud-status-badge').className = "flex items-center gap-1.5 bg-[#e2f0d9] text-[#385723] px-2.5 py-1.5 rounded-xl text-[9px] font-bold border border-[#a9d18e] shadow-sm";
-                    document.getElementById('cloud-status-text').innerText = "Nube Activa";
-                    showToast("🌐 Conectado a la Base de Datos en tiempo real");
-                    
-                    const eventsCol = collection(db, 'artifacts', appId, 'users', user.uid, 'events');
-                    
-                    onSnapshot(eventsCol, (snapshot) => {
-                        events = [];
-                        snapshot.forEach(docSnap => {
-                            events.push({ id: docSnap.id, ...docSnap.data() });
-                        });
-                        
-                        if (events.length === 0) {
-                            // Cargar datos por primera vez a la nube
-                            const initialData = getInitialEventsArray();
-                            initialData.forEach(async (item) => {
-                                await addDoc(eventsCol, item);
-                            });
-                        } else {
-                            refreshAllViews();
-                        }
-                    }, (error) => {
-                        console.error("Error leyendo Firestore, usando local:", error);
-                        activateLocalMode();
-                    });
-                } else {
-                    activateLocalMode();
-                }
-            });
+        // 2. CONEXIÓN E INTEGRACIÓN DIRECTA CON GOOGLE CALENDAR (GIS)
+        function checkGoogleClientId() {
+            const isDefault = googleClientId === "894231804791-familyunir.apps.googleusercontent.com";
+            const isEmpty = !googleClientId || googleClientId.trim() === "" || googleClientId.includes("PEGA_AQUÍ");
+            
+            const warningEl = document.getElementById('gcal-id-warning');
+            if (isDefault || isEmpty) {
+                if (warningEl) warningEl.classList.remove('hidden');
+                logDebug("⚠️ Alerta: Estás utilizando la clave de prueba genérica. Para conexión real, reemplázala con tu ID de Google Cloud.", "warning");
+            } else {
+                if (warningEl) warningEl.classList.add('hidden');
+                logDebug("👉 ID de cliente personalizado detectado: " + googleClientId.substring(0, 15) + "...", "success");
+            }
         }
 
-        // 2. CONEXIÓN E INTEGRACIÓN DIRECTA CON GOOGLE CALENDAR
-        async function initGoogleOAuth() {
+        function initGoogleOAuth() {
+            logDebug("Buscando librerías de Google...");
+            if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+                logDebug("Librería de Google en segundo plano. Esperando...", "warning");
+                setTimeout(initGoogleOAuth, 500);
+                return;
+            }
+
+            logDebug("Librería de Google detectada con éxito. Inicializando cliente...");
+            checkGoogleClientId();
+
             try {
-                if (typeof google !== 'undefined' && google.accounts) {
-                    tokenClient = google.accounts.oauth2.initTokenClient({
-                        client_id: googleClientId,
-                        scope: 'https://www.googleapis.com/auth/calendar.events',
-                        callback: async (resp) => {
-                            if (resp.error !== undefined) {
-                                throw (resp);
-                            }
-                            googleToken = resp.access_token;
-                            isGoogleConnected = true;
-                            
-                            document.getElementById('gcal-status-text').innerText = "Conectado";
-                            document.getElementById('gcal-status-text').className = "font-bold text-emerald-600";
-                            document.getElementById('google-sync-now-btn').classList.remove('hidden');
-                            
-                            showToast("🔌 Cuenta de Google autorizada con éxito");
-                            await syncWithGoogleCalendar();
-                        },
-                    });
-                }
-            } catch (e) {
-                console.warn("OAuth Client init falló. Entrando en Modo Simulación.", e);
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: googleClientId,
+                    scope: 'https://www.googleapis.com/auth/calendar.events',
+                    callback: async (resp) => {
+                        logDebug("Google respondió al inicio de sesión.", "success");
+                        if (resp.error !== undefined) {
+                            logDebug("Error retornado por Google: " + resp.error, "error");
+                            showToast("❌ Falló el inicio de sesión de Google.");
+                            return;
+                        }
+                        
+                        googleToken = resp.access_token;
+                        isGoogleConnected = true;
+                        
+                        document.getElementById('gcal-status-text').innerText = "Conectado";
+                        document.getElementById('gcal-status-text').className = "font-bold text-emerald-600";
+                        document.getElementById('google-sync-now-btn').classList.remove('hidden');
+                        
+                        logDebug("✅ ¡Acceso a Google Calendar concedido de forma segura!", "success");
+                        showToast("🔌 Cuenta de Google autorizada con éxito");
+                        await syncWithGoogleCalendar();
+                    },
+                    error_callback: (err) => {
+                        logDebug("Error en ventana de Google: " + JSON.stringify(err), "error");
+                        showToast("❌ Error al conectar.");
+                    }
+                });
+                logDebug("Cliente de Google Calendar listo para sincronizar.", "success");
+            } catch (err) {
+                logDebug("Error crítico inicializando cliente: " + err.message, "error");
             }
         }
 
         function connectToGoogle() {
+            // Abrir la consola automáticamente para que Albert pueda ver el diagnóstico
+            document.getElementById('debug-console').classList.remove('hidden');
+            logDebug("Presionaste: Conectar con Google Calendar.");
+
             if (!tokenClient) {
-                showToast("🔮 Iniciando simulador de Sincronización de Google Calendar...");
+                logDebug("Lanzando simulador de sincronización local...", "warning");
+                showToast("🔮 Iniciando simulador de Sincronización...");
                 setTimeout(() => {
                     document.getElementById('gcal-status-text').innerText = "Conectado (Simulado)";
                     document.getElementById('gcal-status-text').className = "font-bold text-emerald-600 animate-pulse";
                     document.getElementById('google-sync-now-btn').classList.remove('hidden');
                     isGoogleConnected = true;
-                    showToast("✅ Calendario 'UNIR Katerine' sincronizado bidireccionalmente con éxito.");
-                }, 1200);
+                    showToast("✅ Calendario sincronizado de forma familiar.");
+                    logDebug("Modo simulado completado.", "success");
+                }, 1000);
                 return;
             }
-            tokenClient.requestAccessToken({ prompt: 'consent' });
+
+            try {
+                logDebug("Abriendo el inicio de sesión de Google...");
+                showToast("👉 Selecciona tu correo en la ventana de Google.");
+                tokenClient.requestAccessToken({ prompt: 'consent' });
+            } catch (err) {
+                logDebug("Error lanzando ventana: " + err.message, "error");
+                showToast("❌ No se pudo abrir la ventana de Google.");
+            }
         }
 
         async function syncWithGoogleCalendar() {
             if (!isGoogleConnected) return;
-            showToast("🔄 Sincronizando con los servidores de Google...");
+            logDebug("Obteniendo eventos de Google Calendar del mes de Junio...");
+            showToast("🔄 Sincronizando eventos con Google...");
             
             if (googleToken) {
                 try {
@@ -612,7 +691,8 @@
                     const data = await response.json();
                     
                     if (data.items) {
-                        // Sincronizar eventos de Google a la base de datos (Nube o Local)
+                        logDebug(`Descargados ${data.items.length} eventos de Google. Integrando...`, "success");
+                        let addedCount = 0;
                         data.items.forEach(async (gEvent) => {
                             const exists = events.some(e => e.title === gEvent.summary);
                             if (!exists && gEvent.start && gEvent.start.dateTime) {
@@ -638,36 +718,41 @@
                                 };
 
                                 if (hasFirebase && user) {
+                                    // Guardar en Firestore
+                                    const { addDoc, collection } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
                                     const eventsCol = collection(db, 'artifacts', appId, 'users', user.uid, 'events');
                                     await addDoc(eventsCol, newItem);
                                 } else {
-                                    events.push({ id: "e_" + Date.now(), ...newItem });
-                                    saveLocalEvents(events);
-                                    refreshAllViews();
+                                    // Guardar Localmente
+                                    events.push({ id: "e_" + Date.now() + Math.random(), ...newItem });
                                 }
+                                addedCount++;
                             }
                         });
-                        showToast("✅ Base de datos actualizada con los cambios de Google");
+                        if (addedCount > 0) {
+                            saveLocalEvents(events);
+                            refreshAllViews();
+                        }
+                        logDebug(`Sincronización completa. Se integraron ${addedCount} eventos nuevos.`, "success");
+                        showToast("✅ Calendario sincronizado.");
+                    } else {
+                        logDebug("Google Calendar no retornó eventos nuevos.", "info");
                     }
                 } catch (error) {
-                    console.error("Error GCal sync:", error);
+                    logDebug("Error de red sincronizando: " + error.message, "error");
                 }
-            } else {
-                setTimeout(() => {
-                    showToast("🔄 Descargando últimas modificaciones hechas en Google Calendar...");
-                    showToast("✅ Sincronizado: Se integró 'Reunión de Coordinación UNIR' al Miércoles 10 de Junio");
-                }, 1000);
             }
         }
 
         async function pushEventToGoogle(newEvent) {
             if (!isGoogleConnected || !googleToken) return;
+            logDebug("Exportando nueva actividad a tu Google Calendar...");
             const startDateTime = new Date(`${newEvent.date}T${newEvent.start}:00`).toISOString();
             const endDateTime = new Date(new Date(`${newEvent.date}T${newEvent.start}:00`).getTime() + newEvent.duration * 60000).toISOString();
 
             const resource = {
                 summary: `[${newEvent.type}] ${newEvent.title}`,
-                description: 'Creado automáticamente vía FamilySync App',
+                description: 'Creado vía FamilySync Agenda',
                 start: { dateTime: startDateTime, timeZone: 'America/Bogota' },
                 end: { dateTime: endDateTime, timeZone: 'America/Bogota' }
             };
@@ -681,8 +766,9 @@
                     },
                     body: JSON.stringify(resource)
                 });
+                logDebug("¡Evento guardado con éxito en tu Google Calendar!", "success");
             } catch (err) {
-                console.error("Error subiendo a Google:", err);
+                logDebug("Error exportando a Google: " + err.message, "error");
             }
         }
 
@@ -1160,7 +1246,7 @@
                 link.href = canvas.toDataURL();
                 link.click();
                 container.classList.add('hidden');
-                showToast("📸 ¡Agenda exportada en formato de imagen física de alta gama!");
+                showToast("📸 ¡Agenda exportada!");
             });
         }
 
@@ -1218,29 +1304,29 @@
             const payload = { title, type, date, start, duration };
 
             if (hasFirebase && user) {
+                const { collection, addDoc, doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
                 const eventsCol = collection(db, 'artifacts', appId, 'users', user.uid, 'events');
                 if (editingEventId) {
                     const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'events', editingEventId);
                     await updateDoc(docRef, payload);
-                    showToast("✅ Actividad modificada en la Nube");
+                    showToast("✅ Modificado en la Nube");
                 } else {
                     const docRef = await addDoc(eventsCol, payload);
-                    showToast("✅ Actividad guardada en la Nube");
+                    showToast("✅ Guardado en la Nube");
                     if (isGoogleConnected) {
                         pushEventToGoogle({ id: docRef.id, ...payload });
                     }
                 }
             } else {
-                // Modo de Almacenamiento Local
                 if (editingEventId) {
                     const idx = events.findIndex(ev => ev.id === editingEventId);
                     if (idx !== -1) {
                         events[idx] = { ...events[idx], title, type, date, start, duration };
-                        showToast("✅ Actividad modificada localmente");
+                        showToast("✅ Modificado localmente");
                     }
                 } else {
-                    events.push({ id: "e_" + Date.now(), ...payload });
-                    showToast("✅ Actividad guardada localmente");
+                    events.push({ id: "e_" + Date.now() + Math.random(), ...payload });
+                    showToast("✅ Guardado localmente");
                 }
                 saveLocalEvents(events);
                 refreshAllViews();
@@ -1251,13 +1337,14 @@
 
         async function deleteEvent(id) {
             if (hasFirebase && user) {
+                const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
                 const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'events', id);
                 await deleteDoc(docRef);
-                showToast("🗑️ Actividad eliminada de la Nube");
+                showToast("🗑️ Eliminado de la Nube");
             } else {
                 events = events.filter(e => e.id !== id);
                 saveLocalEvents(events);
-                showToast("🗑️ Actividad eliminada localmente");
+                showToast("🗑️ Eliminado localmente");
                 refreshAllViews();
             }
         }
@@ -1309,8 +1396,8 @@
             }, 3000);
         }
 
-        // Arranque de procesos al cargar el DOM de la página
         window.addEventListener('DOMContentLoaded', () => {
+            checkAndInitFirebase();
             initGoogleOAuth();
             document.getElementById('gcal-connect-btn').addEventListener('click', connectToGoogle);
             document.getElementById('google-sync-now-btn').addEventListener('click', syncWithGoogleCalendar);
